@@ -1,0 +1,16 @@
+# Synthetic data is regenerated, never committed (seed 42 -> byte-identical)
+data/
+*.csv
+
+# Private working material must never land here. This repo is deliberately a
+# SEPARATE folder from projects/governed-lakehouse-poc/ so that an ignore rule is
+# not the only thing standing between private notes and a public commit; these
+# patterns are a backstop, not the boundary.
+CONTEXT.md
+*.mirror.md
+notes/
+scratch/
+
+.DS_Store
+__pycache__/
+*.pyc
