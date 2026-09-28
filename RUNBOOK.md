@@ -11,6 +11,33 @@
 8. [How each control was verified](#8-how-each-control-was-verified)
 9. [What is NOT built yet](#9-what-is-not-built-yet)
 
+### The scripts, in run order
+
+Every statement used to build this is in `sql/`, in the order it was run. Each script carries
+its own recorded results in comments, including the ones that failed and why.
+
+| | Script | Section |
+|---|---|---|
+| 1 | [`phase1_a_setup.sql`](sql/phase1_a_setup.sql) | [Architecture](#2-architecture) |
+| 2 | [`phase1_b_bronze.sql`](sql/phase1_b_bronze.sql) | [Architecture](#2-architecture) |
+| 3 | [`phase1_c_tags.sql`](sql/phase1_c_tags.sql) | [Classification](#3-classification-taxonomy) |
+| 4 | [`phase1_d_comments_bronze.sql`](sql/phase1_d_comments_bronze.sql) | [Classification](#3-classification-taxonomy) |
+| 5 | [`phase1_e_verify.sql`](sql/phase1_e_verify.sql) | [Verification](#8-how-each-control-was-verified) |
+| 6 | [`phase2_a_grants.sql`](sql/phase2_a_grants.sql) | [Access control](#4-access-control) |
+| 7 | [`phase2_b_persona_tests.sql`](sql/phase2_b_persona_tests.sql) | [Verification](#8-how-each-control-was-verified) |
+| 8 | [`phase3_a_masks.sql`](sql/phase3_a_masks.sql) | [Masking and row-level security](#5-masking-and-row-level-security) |
+| 9 | [`phase4_a_silver.sql`](sql/phase4_a_silver.sql) | [Architecture](#2-architecture) |
+| 10 | [`phase4_b_gold_lineage.sql`](sql/phase4_b_gold_lineage.sql) | [Architecture](#2-architecture) |
+| 11 | [`phase5_a_constraints.sql`](sql/phase5_a_constraints.sql) | [Data quality](#6-data-quality-controls) |
+| 12 | [`phase5_b_constraint_tests.sql`](sql/phase5_b_constraint_tests.sql) | [Data quality](#6-data-quality-controls) |
+| 13 | [`phase5_c_expectations.sql`](sql/phase5_c_expectations.sql) | [Data quality](#6-data-quality-controls) |
+| 14 | [`phase3b_a_silver_structural.sql`](sql/phase3b_a_silver_structural.sql) | [Anonymization](#7-anonymization) |
+| 15 | [`phase3b_b_gold_anonymized.sql`](sql/phase3b_b_gold_anonymized.sql) | [Anonymization](#7-anonymization) |
+
+**The numbering is history, not precedence.** `phase3b_*` runs fifteenth because anonymization
+was designed after the masking it replaces — which is the honest order, and the reason the
+masking section still describes a control this build later retired.
+
 ---
 
 ## 1. What this is
@@ -39,6 +66,13 @@ column names, so they apply automatically to tables that do not exist yet.
 ---
 
 ## 2. Architecture
+
+> **Scripts for this section**
+>
+> - [`phase1_a_setup.sql`](sql/phase1_a_setup.sql) — catalogs, schemas, the landing volume
+> - [`phase1_b_bronze.sql`](sql/phase1_b_bronze.sql) — bronze tables, all columns as text
+> - [`phase4_a_silver.sql`](sql/phase4_a_silver.sql) — silver: typing, quality rules, quarantine
+> - [`phase4_b_gold_lineage.sql`](sql/phase4_b_gold_lineage.sql) — gold aggregates and the lineage checks
 
 ### Two catalogs
 
@@ -79,6 +113,11 @@ design, and it is visible in the lineage captures in `images/`.
 ---
 
 ## 3. Classification taxonomy
+
+> **Scripts for this section**
+>
+> - [`phase1_c_tags.sql`](sql/phase1_c_tags.sql) — the governed tags, applied to every column
+> - [`phase1_d_comments_bronze.sql`](sql/phase1_d_comments_bronze.sql) — the plain-language description on each column
 
 Two labels, deliberately doing different jobs.
 
@@ -146,6 +185,10 @@ record**, so it belongs to the business, not to the pipeline.
 ---
 
 ## 4. Access control
+
+> **Scripts for this section**
+>
+> - [`phase2_a_grants.sql`](sql/phase2_a_grants.sql) — the privilege matrix, and removing the platform defaults
 
 ### The personas, and the reasoning behind each
 
@@ -247,6 +290,10 @@ only that persona can do. A denial on its own proves nothing.
 
 ## 5. Masking and row-level security
 
+> **Scripts for this section**
+>
+> - [`phase3_a_masks.sql`](sql/phase3_a_masks.sql) — the six functions and seven tag-matched policies
+
 ### Rules attach to labels, not to columns
 
 A masking rule could name the column it protects. These name a **label**:
@@ -327,6 +374,12 @@ That last one is the sharpest finding in this project, and it is covered next.
 
 ## 6. Data quality controls
 
+> **Scripts for this section**
+>
+> - [`phase5_a_constraints.sql`](sql/phase5_a_constraints.sql) — the ten CHECK constraints
+> - [`phase5_b_constraint_tests.sql`](sql/phase5_b_constraint_tests.sql) — one rejected row per constraint, plus the disable test
+> - [`phase5_c_expectations.sql`](sql/phase5_c_expectations.sql) — declared pipeline expectations, all three modes
+
 Two mechanisms, kept separate because they fail differently and are read by different people.
 
 ### Constraints — refuse the write
@@ -388,6 +441,11 @@ governance mechanisms, opposite diagnosability.
 ---
 
 ## 7. Anonymization
+
+> **Scripts for this section**
+>
+> - [`phase3b_a_silver_structural.sql`](sql/phase3b_a_silver_structural.sql) — removing the date, retiring its mask
+> - [`phase3b_b_gold_anonymized.sql`](sql/phase3b_b_gold_anonymized.sql) — the published table, k measured before it was built
 
 Masking and anonymization protect the same data and make different promises. Masking is
 reversible by policy: the value is present and the platform hides it. Anonymization removes
@@ -503,6 +561,12 @@ undo while satisfying every rule you can express in the platform.
 ---
 
 ## 8. How each control was verified
+
+> **Scripts for this section**
+>
+> - [`phase1_e_verify.sql`](sql/phase1_e_verify.sql) — the structure and coverage suite
+> - [`phase2_b_persona_tests.sql`](sql/phase2_b_persona_tests.sql) — every persona round, run as a second identity
+> - [`phase5_b_constraint_tests.sql`](sql/phase5_b_constraint_tests.sql) — the rejection tests
 
 ### The principle
 
