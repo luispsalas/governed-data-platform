@@ -2,6 +2,20 @@
 -- Every check lists its expected result (as observed on Sep 22 2026) and why it matters.
 -- A check that returns "no rows" is only trusted after checks 5-6 prove it can see the
 -- columns and can fail.
+--
+-- THIRD LEG, ADDED Sep 28 2026 - not a correction, an OVERCLAIM created retroactively by a
+-- later finding. `information_schema` is PERMISSION-FILTERED (established in Phase 5): it
+-- returns only objects the RUNNING IDENTITY can access. So every "0 rows" below means
+-- "nothing unclassified THAT I CAN SEE", and "no rows" is indistinguishable from "no
+-- visibility". These checks were correct when written and nothing rewrote them when the
+-- mechanism was found - which is the failure mode this note exists to stop.
+--   * ALL results below were produced by the PRIMARY (catalog owner), Sep 22 2026.
+--   * Check 5's hard counts - customers 17, orders 9, 26 tags - ARE the visibility control,
+--     but only for a reader who knows whose view they describe. That is what was missing.
+--   * Re-running any of this as a narrower identity should return FEWER objects in check 5.
+--     If check 5 still reads 26 under a persona, the persona is over-privileged.
+-- See item 15: a coverage check must assert how many objects it EXPECTED to inspect, so
+-- seeing fewer fails loudly instead of passing quietly.
 
 -- 1. Structure: only designed schemas, no auto-created `default`
 SHOW SCHEMAS IN prod_commerce;   -- bronze, gold, governance, information_schema, landing, silver

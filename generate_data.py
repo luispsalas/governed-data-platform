@@ -1,4 +1,4 @@
-"""Generate synthetic PII data for the Governed Lakehouse POC.
+"""Generate synthetic PII data for the Governed Data Platform.
 
 Everything here is fake (Faker). Fixed seed, so every run produces the same files.
 

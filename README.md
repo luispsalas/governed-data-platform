@@ -1,8 +1,11 @@
-# Governed Lakehouse
+# Governed Data Platform
 
-A working data platform where **who can see what** is enforced by the platform itself, not by
-convention — built on Databricks Unity Catalog, and tested by logging in as each kind of user
-to confirm they see only what they should.
+**Access decided by classification, not by copies.** A working data platform where *who can
+see what* is enforced by the platform itself rather than by convention — built on Databricks
+Unity Catalog, and tested by signing in as each kind of user to confirm they see only what
+they should.
+
+![Architecture: data flows from a landing volume through bronze and silver to a gold aggregate. Every column carries a classification tag, and one policy reads those tags so a data owner sees full values while an analyst sees masked values and only their own region's rows.](images/architecture.svg)
 
 ## The problem this solves
 
@@ -44,12 +47,29 @@ The national ID becomes a consistent code, so records can still be counted and j
 not traced to a person. The birth date keeps its year, so age analysis survives. **The goal
 is not to hide the data — it is to keep it useful while it stops being identifying.**
 
+## Keeping bad data out
+
+Two different jobs, deliberately kept apart, because they fail differently:
+
+| | What it does | When it acts |
+|---|---|---|
+| **`CHECK` constraints** | Refuse the write outright. Ten of them — non-negative amounts, known currency and status values, no future order dates, and the k-anonymity rule that keeps small groups out of the published aggregate | Before the row lands |
+| **Pipeline expectations** | Let the write proceed and record what was wrong, or drop the row, or fail the run — one of three declared modes per rule | As the data moves |
+
+Both are in `sql/`, with the rejection tests beside them: every constraint was proved by
+sending it a row it had to refuse, and then **switched off to confirm the row got through** —
+because a rule that fires is not yet a rule that was needed.
+
+> **Coming from Snowflake?** Databricks *enforces* `CHECK` constraints; a violated one fails
+> the transaction. Snowflake enforces only `NOT NULL` and treats the rest as informational.
+> Carrying the Snowflake habit across under-uses the strongest enforcement available here.
+
 ## What is in here
 
 | | |
 |---|---|
 | **[RUNBOOK.md](RUNBOOK.md)** | The full walkthrough: design, controls, and how each one was verified |
-| `sql/` | Every statement used to build it, in run order, commented for non-SQL readers |
+| `sql/` | Every statement used to build it, in run order, commented for non-SQL readers — including the constraint and expectation scripts, which carry their own recorded results |
 | `images/` | Lineage captured from the platform, showing the data flow and its classification |
 | `generate_data.py` | Generates the synthetic dataset |
 
@@ -71,8 +91,6 @@ identifiers.
 Stated plainly, because a runbook that claims coverage it does not have is worse than a
 short one.
 
-- **Data quality gates in the pipeline.** Bad rows are caught and set aside with a reason,
-  but as SQL rules rather than declared pipeline expectations.
 - **A full anonymization workflow.** What is here is masking — protection applied when data
   is read. Genuinely anonymized output, where the identifying values are never stored in the
   first place, is the next step.

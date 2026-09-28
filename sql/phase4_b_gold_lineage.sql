@@ -1,4 +1,9 @@
 -- Phase 4, Part B: silver -> gold (business aggregates) and lineage verification.
+-- IDENTITY SCOPE (added Sep 28 2026): every verification result recorded in this script was
+-- produced by the PRIMARY (catalog owner). `information_schema` is permission-filtered, so a
+-- coverage check here reports what the owner can see, not what exists. Re-running as a
+-- persona returns a smaller universe and a clean result means less. Not a correction to any
+-- result below - a scope statement that was missing when they were written.
 -- Run as a member of commerce_data_owners, for the reason given in Part A: a masked
 -- identity would aggregate masked values and store the result.
 SELECT current_user() AS who,

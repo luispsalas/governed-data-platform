@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 470" width="1280" height="470" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">Classification-driven governance: one copy of the data, two different views</title>
+  <desc id="d">Data flows from a landing volume through bronze and silver to a gold aggregate. Every column carries a classification tag. A single ABAC policy reads those tags, so a data owner sees full values while an analyst sees masked values and only their own region's rows.</desc>
+
+  <defs>
+    <pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#171D24"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#46525E"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF3621"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="470" fill="#0B0E11"/>
+  <rect width="1280" height="470" fill="url(#grid)"/>
+
+  <!-- stage labels -->
+  <g font-size="11" letter-spacing="1.6" fill="#6E7B87" font-weight="600">
+    <text x="40" y="34">LANDING</text>
+    <text x="285" y="34">BRONZE · raw</text>
+    <text x="530" y="34">SILVER · typed</text>
+    <text x="775" y="34">GOLD · aggregate</text>
+    <text x="1020" y="34">WHO IS ASKING</text>
+  </g>
+
+  <!-- connectors -->
+  <g fill="none" stroke="#46525E" stroke-width="1.4" marker-end="url(#arrow)">
+    <path d="M 230 148 C 258 148 258 118 279 118"/>
+    <path d="M 230 148 C 258 148 258 196 279 196"/>
+    <path d="M 475 118 C 503 118 503 102 524 102"/>
+    <path d="M 475 196 C 503 196 503 180 524 180"/>
+    <path d="M 475 118 C 505 118 500 258 524 258"/>
+    <path d="M 475 196 C 505 196 500 266 524 266"/>
+    <path d="M 720 102 C 748 102 748 148 769 148"/>
+    <path d="M 720 180 C 748 180 748 156 769 156"/>
+    <path d="M 965 148 C 993 148 993 108 1014 108"/>
+    <path d="M 965 148 C 993 148 993 210 1014 210"/>
+  </g>
+
+  <!-- LANDING -->
+  <g>
+    <rect x="40" y="110" width="190" height="76" rx="8" fill="#161B21" stroke="#262E36"/>
+    <text x="56" y="132" font-size="10" fill="#6E7B87" letter-spacing="1">VOLUME</text>
+    <text x="56" y="152" font-size="14" font-weight="600" fill="#E6EDF3">raw_files</text>
+    <text x="56" y="170" font-size="11" fill="#8B949E">customers.csv · orders.csv</text>
+  </g>
+
+  <!-- BRONZE -->
+  <g>
+    <rect x="285" y="86" width="190" height="64" rx="8" fill="#161B21" stroke="#262E36"/>
+    <text x="301" y="108" font-size="14" font-weight="600" fill="#E6EDF3">customers</text>
+    <rect x="301" y="118" width="122" height="19" rx="4" fill="#0E3A3F"/>
+    <text x="309" y="131" font-size="10" fill="#3FD0DA">classification: restricted</text>
+
+    <rect x="285" y="164" width="190" height="64" rx="8" fill="#161B21" stroke="#262E36"/>
+    <text x="301" y="186" font-size="14" font-weight="600" fill="#E6EDF3">orders</text>
+    <rect x="301" y="196" width="122" height="19" rx="4" fill="#0E3A3F"/>
+    <text x="309" y="209" font-size="10" fill="#3FD0DA">classification: restricted</text>
+  </g>
+
+  <!-- SILVER -->
+  <g>
+    <rect x="530" y="70" width="190" height="64" rx="8" fill="#161B21" stroke="#262E36"/>
+    <text x="546" y="92" font-size="14" font-weight="600" fill="#E6EDF3">customers</text>
+    <rect x="546" y="102" width="122" height="19" rx="4" fill="#0E3A3F"/>
+    <text x="554" y="115" font-size="10" fill="#3FD0DA">classification: restricted</text>
+
+    <rect x="530" y="148" width="190" height="64" rx="8" fill="#161B21" stroke="#262E36"/>
+    <text x="546" y="170" font-size="14" font-weight="600" fill="#E6EDF3">orders</text>
+    <rect x="546" y="180" width="122" height="19" rx="4" fill="#0E3A3F"/>
+    <text x="554" y="193" font-size="10" fill="#3FD0DA">classification: restricted</text>
+
+    <rect x="530" y="226" width="152" height="58" rx="8" fill="#12161B" stroke="#232A31" stroke-dasharray="4 3"/>
+    <text x="546" y="248" font-size="13" font-weight="600" fill="#9FB0BD">quarantine_*</text>
+    <text x="546" y="266" font-size="10.5" fill="#6E7B87">rejected rows, kept by reason</text>
+  </g>
+
+  <!-- GOLD -->
+  <g>
+    <rect x="769" y="110" width="196" height="76" rx="8" fill="#161B21" stroke="#262E36"/>
+    <text x="785" y="132" font-size="13.5" font-weight="600" fill="#E6EDF3">revenue_by_region_month</text>
+    <rect x="785" y="142" width="108" height="19" rx="4" fill="#0E3A3F"/>
+    <text x="793" y="155" font-size="10" fill="#3FD0DA">classification: internal</text>
+    <text x="785" y="176" font-size="10.5" fill="#6E7B87">groups under 5 customers suppressed</text>
+  </g>
+
+  <!-- CONSUMERS -->
+  <g>
+    <rect x="1014" y="76" width="226" height="64" rx="8" fill="#161B21" stroke="#2C3742"/>
+    <text x="1030" y="98" font-size="13" font-weight="600" fill="#E6EDF3">Data owner</text>
+    <text x="1030" y="116" font-size="11" fill="#8B949E">rudiger.poelitz@example.de</text>
+    <text x="1030" y="131" font-size="11" fill="#8B949E">4,940 rows · all regions</text>
+
+    <rect x="1014" y="178" width="226" height="64" rx="8" fill="#161B21" stroke="#FF3621" stroke-opacity="0.5"/>
+    <text x="1030" y="200" font-size="13" font-weight="600" fill="#E6EDF3">Analyst</text>
+    <text x="1030" y="218" font-size="11" fill="#3FD0DA">r***@example.de</text>
+    <text x="1030" y="233" font-size="11" fill="#8B949E">1,684 rows · Europe only</text>
+  </g>
+
+  <!-- policy band -->
+  <g>
+    <rect x="40" y="338" width="1200" height="62" rx="8" fill="#12171D" stroke="#2A323A"/>
+    <rect x="40" y="338" width="3.5" height="62" rx="2" fill="#FF3621"/>
+    <text x="62" y="363" font-size="13" font-weight="600" fill="#E6EDF3">One policy, written once</text>
+    <text x="62" y="384" font-size="11.5" fill="#8B949E">Wherever a column carries <tspan fill="#3FD0DA">pii_type</tspan>, mask it for everyone except the owners — including tables that do not exist yet.</text>
+  </g>
+  <g fill="none" stroke="#FF3621" stroke-opacity="0.45" stroke-width="1.3" stroke-dasharray="3 4" marker-end="url(#arrowRed)">
+    <path d="M 702 336 L 702 216"/>
+    <path d="M 867 336 L 867 192"/>
+    <path d="M 1127 336 L 1127 248"/>
+  </g>
+
+  <!-- footer legend -->
+  <text x="40" y="432" font-size="11" fill="#6E7B87">Every control verified by signing in as each role — the owner's own view proves nothing about access.</text>
+  <text x="1240" y="432" font-size="11" fill="#4E5A66" text-anchor="end">Databricks Unity Catalog · synthetic data</text>
+</svg>

@@ -1,4 +1,4 @@
-# Governed Lakehouse — Governance Runbook
+# Governed Data Platform — Governance Runbook
 
 ## Contents
 1. [What this is](#1-what-this-is)
@@ -6,8 +6,9 @@
 3. [Classification taxonomy](#3-classification-taxonomy)
 4. [Access control](#4-access-control)
 5. [Masking and row-level security](#5-masking-and-row-level-security)
-6. [How each control was verified](#6-how-each-control-was-verified)
-7. [What is NOT built yet](#7-what-is-not-built-yet)
+6. [Data quality controls](#6-data-quality-controls)
+7. [How each control was verified](#7-how-each-control-was-verified)
+8. [What is NOT built yet](#8-what-is-not-built-yet)
 
 ---
 
@@ -21,7 +22,7 @@ Every claim here was tested by signing in as a second user and checking what the
 reach. That distinction runs through the whole document, because the single most common way
 a governance design fails is that it was only ever reviewed, never exercised.
 
-**Read it in order for the design, or jump to [section 6](#6-how-each-control-was-verified)
+**Read it in order for the design, or jump to [section 7](#7-how-each-control-was-verified)
 for the verification.** Each control names what was expected, what actually happened, and
 what changed as a result.
 
@@ -284,7 +285,7 @@ worse — someone has to validate raw data, and if the platform forbids it, that
 an export nobody governs. **Naming the exception inside the rule makes it auditable.**
 
 That same exemption has a consequence worth internalizing: an owner testing the masks sees
-nothing wrong, ever. See [section 6](#6-how-each-control-was-verified).
+nothing wrong, ever. See [section 7](#7-how-each-control-was-verified).
 
 ### Row-level security
 
@@ -323,7 +324,69 @@ That last one is the sharpest finding in this project, and it is covered next.
 
 ---
 
-## 6. How each control was verified
+## 6. Data quality controls
+
+Two mechanisms, kept separate because they fail differently and are read by different people.
+
+### Constraints — refuse the write
+
+Ten `CHECK` constraints on the silver and gold tables. A violated one fails the transaction,
+so the bad row never lands:
+
+| Rule | Guards against |
+|---|---|
+| Non-negative amounts | Sign errors arriving from the source |
+| Known `status`, `currency`, `region` values | A vocabulary drifting without anyone deciding |
+| No future order dates | Back-dated or clock-skewed rows inflating a forecast |
+| Group size at least 5 | A published aggregate describing a handful of identifiable people |
+
+The last one is worth naming: **k-anonymity enforced as a constraint rather than as a
+convention.** The suppression rule is applied when the aggregate is built, and the constraint
+then makes it impossible to publish a row that breaks it — two independent statements of the
+same rule, so a mistake in one is caught by the other.
+
+> **Coming from Snowflake?** Databricks *enforces* `CHECK` constraints — *"when a constraint
+> is violated, the transaction fails with an error."* Snowflake enforces only `NOT NULL` and
+> treats the rest as informational. Primary and foreign keys are informational in **both**.
+> A habit carried across from Snowflake under-uses the strongest enforcement available here.
+
+### Expectations — let it through, but on the record
+
+Declared pipeline expectations, each with one of three modes: keep the row and count the
+violation, drop the row, or fail the run. All three are demonstrated in `sql/`.
+
+The distinction that matters when choosing between them: a constraint answers *"must this
+never happen?"*, an expectation answers *"what should we do when it does?"* Most real rules
+are the second kind, and forcing them into the first produces a pipeline that stops overnight
+for a row nobody would have cared about.
+
+### Where the allowed values came from, and why that matters
+
+The value lists in these constraints were read out of the data — `SELECT status, COUNT(*) …
+GROUP BY status` — rather than assumed. That makes them a demonstration of the mechanism,
+**not a governed vocabulary.** On the first attempt the values *were* assumed, four of five
+were invented, and the revenue rule built on them matched zero rows.
+
+In a real engagement each list is a **business sign-off**: versioned, with a named owner, and
+changing it is a change-controlled event — because a constraint turns a vocabulary into
+something that can reject production writes. Deriving an enforced rule from a sample is how
+yesterday's data quietly becomes tomorrow's policy.
+
+### How these were verified
+
+Every constraint was sent a row it had to refuse; all eight rejection tests were refused, each
+naming the constraint that stopped it. Then the step that usually gets skipped: **the rule was
+switched off and the same row sent again, to confirm it then got through.** A rule that fires
+is not yet a rule that was needed — something else may already have been catching it.
+
+One property worth recording, because it contrasts sharply with the masking controls: a
+rejected write **names the constraint that rejected it.** A failing column mask does not name
+the mask — it surfaces as a cast error several layers from its cause. Same platform, two
+governance mechanisms, opposite diagnosability.
+
+---
+
+## 7. How each control was verified
 
 ### The principle
 
@@ -429,14 +492,13 @@ Two caveats a reader should not have to discover:
 
 ---
 
-## 7. What is NOT built yet
+## 8. What is NOT built yet
 
 Stated plainly, because a runbook claiming coverage it does not have is worse than a short
 one.
 
 | Not built | What exists instead |
 |---|---|
-| **Declared pipeline quality expectations** | Quality rules as SQL, with rejected rows preserved and labeled by reason. The rules work; they are not declared as pipeline constraints with enforcement modes |
 | **An anonymization workflow** | Masking — protection applied at read time. Genuinely anonymized output, where identifying values are never stored, is the next step. The design is known: replace the maskable date with a birth year or age band, so there is nothing to mask |
 | **Compliance control mapping** | Controls that are built and tested, not yet mapped to named SOC 2 or GDPR clauses |
 | **Account-level setup** | Metastore creation, identity federation and workspace binding described rather than performed — a single workspace cannot demonstrate them |
