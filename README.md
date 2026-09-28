@@ -64,6 +64,44 @@ because a rule that fires is not yet a rule that was needed.
 > the transaction. Snowflake enforces only `NOT NULL` and treats the rest as informational.
 > Carrying the Snowflake habit across under-uses the strongest enforcement available here.
 
+## Two ways to protect the same data
+
+Masking and anonymization are often treated as the same move. They fail differently, and the
+difference decides who can be given the data.
+
+| | Masking | Anonymization |
+|---|---|---|
+| Where the protection lives | In a policy, applied when the column is read | In the shape of the data — the detail was never written |
+| If the control is removed | The real values are served, silently | Nothing happens; there is nothing to reveal |
+| If it breaks | Often invisible to the owner, who is exempt | The query fails loudly for everyone |
+| Who can read the result | The roles the policy allows | Anyone |
+
+Both are built here, on the same dataset:
+
+**Structural, in the curated layer.** A full birth date was replaced by a birth *year*. The
+mask that used to protect it returned the year anyway, so nobody lost information — and the
+column that could be exposed by a policy change no longer exists. The mask and its policy
+were then retired, because a control that guards nothing still reads as coverage.
+
+**A published table, shareable by anyone.** A customer profile carrying no name, email,
+phone, national ID, address — and **no customer key, not even a hashed one**. Ages become
+decade bands, locations become regions, and any combination describing fewer than five
+people is withheld, enforced by a constraint that was tested by trying to violate it.
+
+> **A hashed ID is not anonymous.** Customer IDs here run `C00001`–`C05000`. Anyone who knows
+> that format can hash every possible value in about a second and match them back. A hash
+> without a secret is pseudonymization — useful, reversible, and a different promise. The
+> published table therefore carries no key at all.
+
+The return on removing those columns is concrete: the curated customer table is readable by
+two roles, and the anonymized one is readable by everybody in the workspace.
+
+**What anonymization does not do:** it answers *identification*, and nothing else. An analyst
+restricted to European customers in the curated layer can read all-region totals here —
+correct if the restriction meant "may not see their personal data", wrong if it meant "may
+not know about them". No technical check can tell those apart; somebody has to write down
+which one was meant.
+
 ## What is in here
 
 | | |
@@ -91,9 +129,6 @@ identifiers.
 Stated plainly, because a runbook that claims coverage it does not have is worse than a
 short one.
 
-- **A full anonymization workflow.** What is here is masking — protection applied when data
-  is read. Genuinely anonymized output, where the identifying values are never stored in the
-  first place, is the next step.
 - **Compliance control mapping.** The controls exist and are tested; they are not yet mapped
   to named SOC 2 or GDPR clauses.
 - **Account-level setup.** Metastore creation and identity federation are described, not
@@ -107,14 +142,27 @@ Every control here was tested by signing in as each kind of user. That is what m
 record of a build rather than a description of a design — and it is where the findings came
 from:
 
-- Granting metadata discovery to an auditor **did not let them read their own audit log**.
-  Two permissions that sound alike do different jobs.
 - Copying a table into the curated layer **silently dropped its sensitivity labels** — while
   keeping its written descriptions. The copy looked documented and was unprotected.
 - A column type change turned a mask into a **query failure** for analysts, and the account
   that built it could not see the problem, because owners bypass their own masks.
 - Six tables ended up owned by a person rather than a team, months of good intentions
   undone by the fact that **ownership does not apply to things created later**.
+- Re-running a maintenance script that had already done its job **took away two teams'
+  read access and left it that way**. It failed on the step that was already applied —
+  after the step that removed access, before the one that gives it back. Nothing reported
+  it, and the account that ran it could not have noticed: owners are exempt from the
+  controls that broke.
+- Adding a column placed it at the **end** of the table, while the obvious edit to the
+  build script placed it in the **middle**. The next reload would have written birth years
+  into a consent flag. Each file was correct on its own; only the pair was wrong, and
+  nothing compares them.
 
-None of these were found by the checks written to find them. The runbook says how each one
-surfaced.
+> [!IMPORTANT]
+> **None of these were found by the checks written to find them.** They surfaced some other
+> way — one from a screenshot, one from a persona round looking for something else. The
+> runbook says how, for each of them.
+>
+> That is the argument for testing governance as a second identity rather than reading
+> the configuration: a control that is wrong and a control that is right look identical
+> from the seat that built it.

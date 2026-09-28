@@ -1,0 +1,9 @@
+# GitHub's language bar counts only languages typed `programming` or `markup` in
+# Linguist's languages.yml. SQL is typed `data`, so ~3,000 lines of it were excluded and
+# the repo displayed as 100% Python on the strength of one data-generation script.
+# `linguist-detectable` includes a language in the stats regardless of its type.
+*.sql linguist-detectable=true
+
+# generate_data.py produces the synthetic fixture; it is not the subject of this repo.
+# Left detectable rather than hidden - it is real code and the README points at it - but
+# it should not be the only thing counted.

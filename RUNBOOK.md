@@ -7,8 +7,9 @@
 4. [Access control](#4-access-control)
 5. [Masking and row-level security](#5-masking-and-row-level-security)
 6. [Data quality controls](#6-data-quality-controls)
-7. [How each control was verified](#7-how-each-control-was-verified)
-8. [What is NOT built yet](#8-what-is-not-built-yet)
+7. [Anonymization](#7-anonymization)
+8. [How each control was verified](#8-how-each-control-was-verified)
+9. [What is NOT built yet](#9-what-is-not-built-yet)
 
 ---
 
@@ -22,7 +23,7 @@ Every claim here was tested by signing in as a second user and checking what the
 reach. That distinction runs through the whole document, because the single most common way
 a governance design fails is that it was only ever reviewed, never exercised.
 
-**Read it in order for the design, or jump to [section 7](#7-how-each-control-was-verified)
+**Read it in order for the design, or jump to [section 8](#8-how-each-control-was-verified)
 for the verification.** Each control names what was expected, what actually happened, and
 what changed as a result.
 
@@ -285,7 +286,7 @@ worse — someone has to validate raw data, and if the platform forbids it, that
 an export nobody governs. **Naming the exception inside the rule makes it auditable.**
 
 That same exemption has a consequence worth internalizing: an owner testing the masks sees
-nothing wrong, ever. See [section 7](#7-how-each-control-was-verified).
+nothing wrong, ever. See [section 8](#8-how-each-control-was-verified).
 
 ### Row-level security
 
@@ -386,7 +387,122 @@ governance mechanisms, opposite diagnosability.
 
 ---
 
-## 7. How each control was verified
+## 7. Anonymization
+
+Masking and anonymization protect the same data and make different promises. Masking is
+reversible by policy: the value is present and the platform hides it. Anonymization removes
+the ability to reverse, because the detail required was never written.
+
+Both are built here. The distinction is not academic — it decides who may be given the data.
+
+### Structural, in the curated layer
+
+`silver.customers` carried a full birth date protected by a column mask that generalized it
+to the year. That mask had already failed once, in a way worth remembering: applied to a
+column whose type it did not expect, it made the column **unreadable** rather than masked,
+and the owner could not see the problem because owners are exempt from their own masks.
+
+The fix was to stop storing the precision. The date column was replaced by a birth **year**,
+which is exactly what the mask returned, so no reader lost information — and the column that
+a policy change could expose no longer exists. The mask and its policy were then retired.
+
+Two details that matter more than the change itself:
+
+- **Prove the equivalence before destroying the evidence.** The new column was compared
+  against the old one while both existed, on values and on distribution. Afterwards the claim
+  is unfalsifiable.
+- **Removing a masked column has an exposure window.** A tagged column cannot be dropped, and
+  the tag is what the policy matches on — so between untagging and dropping, the column is
+  readable in full. Doing it quickly is not a control. The schema was taken out of service
+  for the change and restored to exactly the grants it had before.
+
+> **Coming from Snowflake?** The trade-off is the same on any platform, and it is rarely
+> stated: a mask is invisible to consumers, so queries keep working. A structural change is a
+> **breaking** change — the column is gone and every query naming it fails. That is the real
+> reason teams reach for masking where structure would be safer, and a recommendation that
+> ignores it is recommending an outage.
+
+### Two defects this change produced, and what they cost
+
+Both were caused by the change itself rather than by the design, and neither would have been
+caught by any check in this build.
+
+**Re-running the maintenance steps removed two teams' access and left it removed.** The steps
+take access away, alter the table, and give access back. Run a second time after the work was
+already done, they revoked successfully and then failed on the statement that operates on the
+column — which no longer existed. Execution stopped there: after the revoke, before the
+restore.
+
+Three things make this worse than an ordinary mistake:
+
+- It failed **because** the change had already been applied, so a re-run was guaranteed to
+  strand access every time, for as long as the work stayed done.
+- **Nothing reported it.** The roles would have discovered it by being unable to work; the
+  account that ran it could not have noticed, because owners are exempt from the controls
+  that broke.
+- The obvious way to check made it look fine. Asking for the privileges on the *table*
+  listed the ones that still reached it and looked entirely normal; only asking at the
+  *schema*, where the privilege was actually held, showed it had gone. **Check access at the
+  level the grant lives.**
+
+The fix is not care. It is a guard: one statement at the top that stops the section if the
+change has already been applied, so a second run does nothing instead of causing an outage.
+
+**Adding the column put it in a different place than the build script did.** Adding a column
+to a live table appends it to the end; the obvious edit to the build script replaced the old
+column where it used to sit, in the middle. The reload statement matches columns by
+*position*, so the next scheduled load would have written birth years into a consent flag —
+quietly, with no type error to stop it.
+
+Each file was correct read on its own. Only the pair was wrong, and nothing in the platform
+compares them. Both now place the column last, deliberately and with a comment saying why.
+
+### A published table anyone can read
+
+`gold.customer_profile_anonymized` carries no name, email, phone, national ID or address —
+and **no customer key, not even a hashed one.** Ages are decade bands, location is region,
+and every published row describes at least five people.
+
+> **A hashed identifier is not anonymous.** The customer IDs here run `C00001`–`C05000`.
+> Anyone who knows the format can hash all of them in about a second and match them back. A
+> hash with no secret is **pseudonymization**: useful, reversible, and a different promise.
+> Calling its output anonymous is the most common mistake in this area, and the reason this
+> table carries no key at all.
+
+**The generalization was measured, not chosen.** Keeping country alongside decade and segment
+would have published six groups describing twenty-two people, the smallest containing three
+— individuals, in a table labelled anonymized. Generalizing location to region removed that
+entirely. The number is what settled the design.
+
+**k is a property of what you publish, not what you designed.** Measured on three attributes,
+the smallest group held fifteen. The built table groups by four — a marketing-consent flag
+joined the set — and the smallest group is exactly **five**. One boolean column, the least
+suspicious kind, consumed the whole margin.
+
+**The suppression rule removes nothing today**, and is kept anyway: it is one person away
+from firing, and it is what catches the next load rather than the current one.
+
+### What anonymization does not do
+
+It answers **identification**. Nothing else.
+
+An analyst restricted to European customers reads 1,684 people in the curated layer and
+all-region totals in the anonymized table, because the row filter matches on a tag this table
+deliberately does not carry. Whether that is correct depends entirely on what the restriction
+was meant to mean:
+
+- *may not see European customers' personal data* — then this is fine;
+- *may not know about non-European customers* — then it is a violation that passes every
+  technical control.
+
+Those two readings are identical in a privilege matrix and opposite in consequence. **No check
+will ever flag the difference; somebody has to write down which one was intended.** Scope,
+purpose limitation and need-to-know are separate questions that anonymization can silently
+undo while satisfying every rule you can express in the platform.
+
+---
+
+## 8. How each control was verified
 
 ### The principle
 
@@ -492,14 +608,13 @@ Two caveats a reader should not have to discover:
 
 ---
 
-## 8. What is NOT built yet
+## 9. What is NOT built yet
 
 Stated plainly, because a runbook claiming coverage it does not have is worse than a short
 one.
 
 | Not built | What exists instead |
 |---|---|
-| **An anonymization workflow** | Masking — protection applied at read time. Genuinely anonymized output, where identifying values are never stored, is the next step. The design is known: replace the maskable date with a birth year or age band, so there is nothing to mask |
 | **Compliance control mapping** | Controls that are built and tested, not yet mapped to named SOC 2 or GDPR clauses |
 | **Account-level setup** | Metastore creation, identity federation and workspace binding described rather than performed — a single workspace cannot demonstrate them |
 | **Cross-platform policy** | Nothing. Expressing the same rules in a second platform, and viewing both through one catalog, is not started |

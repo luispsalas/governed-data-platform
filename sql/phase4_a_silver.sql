@@ -64,6 +64,24 @@ SELECT current_user() AS who,
 -- Bronze keeps everything as text so ingestion cannot corrupt a postcode; silver is where
 -- the business meaning is asserted: a birth date is a date, a consent flag is true or false.
 -- try_cast returns NULL instead of failing, so one bad value cannot abort the build.
+-- COLUMN ORDER WARNING (Phase 3b). `birth_year` is LAST in both the CREATE and the
+-- INSERT OVERWRITE below, because ALTER TABLE ADD COLUMN appended it to the END of the live
+-- table. INSERT OVERWRITE matches columns BY POSITION, so listing birth_year where
+-- date_of_birth used to sit (position 13) would write years into `marketing_consent`. That
+-- is the silent-corruption shape: a schema change made in place, and a build script edited
+-- in the obvious place, disagreeing about order with nothing reporting it. Worth testing
+-- `INSERT OVERWRITE ... BY NAME`, which removes the positional dependency entirely - NOT
+-- verified here, so it is a recommendation and not an instruction.
+--
+-- PHASE 3b CHANGED THIS BUILD (Sep 28 2026). silver.customers no longer carries
+-- `date_of_birth`; it carries `birth_year` INT instead. The full date was removed from this
+-- layer because a type-mismatched mask had DENIED the column rather than masking it, and the
+-- control is now STRUCTURAL - the sensitive precision is never written, so there is nothing
+-- to mask and no mask to fail. Non-owners lose nothing: the retired mask returned year-only
+-- anyway (make_date(year,1,1)), and the full date remains in bronze.customers.
+-- IF YOU RESTORE THE OLD EXPRESSION, YOU SILENTLY UNDO PHASE 3b - the column returns with no
+-- tag and no policy matching it, and every coverage check still reports clean because an
+-- untagged column is only visible to a check that looks for MISSING tags.
 CREATE TABLE prod_commerce.silver.customers
 COMMENT 'Customer master, one row per customer, types applied and quality rules enforced. Rows failing a rule are in silver.quarantine_customers, not dropped. Source: bronze.customers. Carries direct identifiers - masked for everyone except commerce_data_owners by the catalog ABAC policies.'
 AS
@@ -79,11 +97,12 @@ SELECT customer_id,
        country,
        lower(trim(region))             AS region,         -- the row filter compares on this, so normalize it
        segment,
-       try_cast(date_of_birth AS DATE) AS date_of_birth,
        try_cast(marketing_consent AS BOOLEAN) AS marketing_consent,
        try_cast(created_at AS TIMESTAMP)      AS created_at,
        _ingested_at,
-       current_timestamp()             AS _silver_built_at
+       current_timestamp()             AS _silver_built_at,
+       -- Phase 3b. LAST ON PURPOSE - see the ordering note at the head of this file.
+       year(try_cast(date_of_birth AS DATE)) AS birth_year
 FROM prod_commerce.bronze.customers
 WHERE email IS NOT NULL AND trim(email) <> '';            -- a customer we cannot contact is not a valid record
 
@@ -185,7 +204,7 @@ GROUP BY reject_reason ORDER BY n_rows DESC;
 
 -- Did typing lose anything? A try_cast that failed shows up here as a NULL that bronze did
 -- not have. Expect zeros; anything else is a format the rules did not anticipate.
-SELECT COUNT_IF(date_of_birth IS NULL)     AS dob_unparseable,
+SELECT COUNT_IF(birth_year IS NULL)        AS birth_year_unparseable,
        COUNT_IF(created_at IS NULL)        AS created_at_unparseable,
        COUNT_IF(marketing_consent IS NULL) AS consent_unparseable
 FROM prod_commerce.silver.customers;
@@ -219,7 +238,7 @@ ALTER TABLE prod_commerce.silver.customers ALTER COLUMN phone          SET TAGS 
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN national_id    SET TAGS ('classification' = 'restricted', 'pii_type' = 'national_id');
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN street_address SET TAGS ('classification' = 'restricted', 'pii_type' = 'address');
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN customer_id    SET TAGS ('classification' = 'confidential');
-ALTER TABLE prod_commerce.silver.customers ALTER COLUMN date_of_birth  SET TAGS ('classification' = 'confidential', 'pii_type' = 'dob');
+ALTER TABLE prod_commerce.silver.customers ALTER COLUMN birth_year     SET TAGS ('classification' = 'confidential');   -- Phase 3b: NO pii_type - nothing masks it
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN city           SET TAGS ('classification' = 'confidential', 'pii_type' = 'address');
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN postcode       SET TAGS ('classification' = 'confidential', 'pii_type' = 'address');
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN country        SET TAGS ('classification' = 'internal');
@@ -293,8 +312,8 @@ ALTER TABLE prod_commerce.silver.customers ALTER COLUMN email COMMENT
   'Primary contact address, lowercased and trimmed so one person is one row. Never null in silver: rows without one are in quarantine_customers. Shown to analysts as first letter + domain (r***@hotmail.de) so campaign reach by provider stays answerable without exposing the address.';
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN national_id COMMENT
   'Government identifier as issued, leading zeros preserved (stored as text for that reason). Analysts see a SHA-256 pseudonym, identical for the same person every time, so records can still be counted and joined but not resolved to a person.';
-ALTER TABLE prod_commerce.silver.customers ALTER COLUMN date_of_birth COMMENT
-  'Date of birth, typed from the bronze text value. Analysts see the year only (1951-**-**): age brackets remain usable for segmentation while the exact date, which is a strong re-identification key when combined with postcode, does not leave this layer.';
+ALTER TABLE prod_commerce.silver.customers ALTER COLUMN birth_year COMMENT
+  'Year of birth, stored instead of the full date so there is no date-level precision to protect. Quasi-identifier: not identifying alone, identifying in combination with region and segment, which is why the published aggregates suppress small groups. Carries no mask - the generalization is structural, applied when the row is written rather than when it is read. The full date remains in bronze.customers for anyone with that access.';
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN region COMMENT
   'Sales region, lowercase: na, eu or latam. Governs row-level access - a member of analyst_eu sees only rows where this reads eu. Change it and you change who can see the customer, so it is owned by Sales Operations, not by the pipeline.';
 ALTER TABLE prod_commerce.silver.customers ALTER COLUMN marketing_consent COMMENT
@@ -361,7 +380,7 @@ WHERE schema_name = 'silver' GROUP BY tag_name;
 -- expect classification on every column, pii_type on the personal ones, filter_key = 1
 
 -- 7c. The owner still reads real values - the build was not run masked.
-SELECT current_user() AS who, first_name, email, national_id, date_of_birth
+SELECT current_user() AS who, first_name, email, national_id, birth_year
 FROM prod_commerce.silver.customers LIMIT 5;
 -- expect real names and addresses. '***' here means the build ran as a masked identity and
 -- the table must be rebuilt, not re-tagged.
@@ -404,11 +423,11 @@ SELECT customer_id, first_name, last_name,
        phone, national_id, street_address, city, postcode, country,
        lower(trim(region)) AS region,
        segment,
-       try_cast(date_of_birth AS DATE)        AS date_of_birth,
        try_cast(marketing_consent AS BOOLEAN) AS marketing_consent,
        try_cast(created_at AS TIMESTAMP)      AS created_at,
        _ingested_at,
-       current_timestamp()                    AS _silver_built_at
+       current_timestamp()                    AS _silver_built_at,
+       year(try_cast(date_of_birth AS DATE))  AS birth_year   -- Phase 3b, LAST on purpose
 FROM prod_commerce.bronze.customers
 WHERE email IS NOT NULL AND trim(email) <> '';                 -- 4940 inserted
 
