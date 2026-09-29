@@ -64,6 +64,11 @@ because a rule that fires is not yet a rule that was needed.
 > the transaction. Snowflake enforces only `NOT NULL` and treats the rest as informational.
 > Carrying the Snowflake habit across under-uses the strongest enforcement available here.
 
+> **New here?** [GUIDE.md](GUIDE.md) is the shortest path to the useful parts — the design
+> reasoning, the business decisions the platform cannot make for you, and the ten places this
+> build's assumptions turned out to be wrong. This README describes *what* was built;
+> the guide explains *why*, and what it cost to find out.
+
 ## Two ways to protect the same data
 
 Masking and anonymization are often treated as the same move. They fail differently, and the
@@ -106,6 +111,7 @@ which one was meant.
 
 | | |
 |---|---|
+| **[GUIDE.md](GUIDE.md)** | **Start here if you are about to build one of these.** What the work involves, which decisions belong to the business, and the places where a reasonable design meets the platform and loses |
 | **[RUNBOOK.md](RUNBOOK.md)** | The full walkthrough: design, controls, and how each one was verified |
 | `sql/` | Every statement used to build it, in run order, commented for non-SQL readers — including the constraint and expectation scripts, which carry their own recorded results |
 | `images/` | Lineage captured from the platform, showing the data flow and its classification |
