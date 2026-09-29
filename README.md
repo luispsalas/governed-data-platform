@@ -112,6 +112,7 @@ which one was meant.
 |---|---|
 | **[GUIDE.md](GUIDE.md)** | **Start here if you are about to build one of these.** What the work involves, which decisions belong to the business, and the places where a reasonable design meets the platform and loses |
 | **[RUNBOOK.md](RUNBOOK.md)** | The full walkthrough: design, controls, and how each one was verified |
+| [`SNOWFLAKE.md`](SNOWFLAKE.md) | Snowflake ↔ Databricks: governance differences that change a design, and the four ways the platforms actually connect |
 | `sql/` | Every statement used to build it, in run order, commented for non-SQL readers, including the constraint and expectation scripts, which carry their own recorded results |
 | `images/` | Lineage captured from the platform, showing the data flow and its classification |
 | `generate_data.py` | Generates the synthetic dataset |

@@ -415,6 +415,8 @@ Views cannot carry row filters or column masks at all. The documented alternativ
 **dynamic view** — access logic written into the view's SQL — and the vendor names its own
 drawbacks ([ABAC vs table-level filters and
 masks](https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/abac-vs-rls-cm)).
+Snowflake's `SECURE VIEW` has no Unity Catalog equivalent; see [SNOWFLAKE.md](SNOWFLAKE.md) for
+that and the other differences that change a design.
 Dynamic views *"lack semantic metadata such as tags or policy definitions in system tables,
 which makes them harder to audit at scale."* And more sharply: *"Because they lack a
 SecureView barrier, they don't protect against probing attacks, where a user crafts a
