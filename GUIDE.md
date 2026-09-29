@@ -550,7 +550,7 @@ same object succeeds in a second.
 **So the guard blocks the one path that would have preserved the classification and permits
 both paths that discard it** — and the error text routes you toward `DROP` + `CREATE`, because
 that is what makes it go away. The correct answer is `INSERT OVERWRITE`, which keeps the column
-definitions and therefore keeps every tag and comment. See [`sql/phase4_a_silver.sql`](sql/phase4_a_silver.sql).
+definitions and therefore keeps every tag and comment. See [`sql/09_silver.sql`](sql/09_silver.sql).
 
 ### Quality rules do not compose across layers
 
@@ -562,7 +562,7 @@ the *raw* layer, where those customers still existed.
 The fix is to join child to parent **within the same layer**, so the child inherits the
 parent's rejections. The general form: **a filter applied at one layer does not propagate; the
 next layer must filter on the previous layer's output, not on the source.** See
-[`sql/phase4_a_silver.sql`](sql/phase4_a_silver.sql).
+[`sql/09_silver.sql`](sql/09_silver.sql).
 
 ### Dropping a materialized view is not transitive
 
@@ -574,7 +574,7 @@ Dropping the view leaves the other two behind as orphans in a governed schema.
 They can be removed by hand, and they can be classified like any table. But a schema's object
 set changes as a side effect of declaring a transformation, so **re-run your coverage checks
 after pipeline work, not only after table work.** See
-[`sql/phase3b_b_gold_anonymized.sql`](sql/phase3b_b_gold_anonymized.sql).
+[`sql/16_anonymize_gold.sql`](sql/16_anonymize_gold.sql).
 
 ### Lineage is cumulative, not current
 
@@ -586,7 +586,7 @@ is live. An auditor reading it raw gets every answer the table has ever had.
 The UI is not silent about this — the graph has a time-window selector — but the **system
 table applies no window by default**, so SQL-based lineage queries and anything built on them
 return every edge ever recorded. **Lineage answers "what has ever fed this"; only a timestamp
-filter turns it into "what feeds this."** See [`sql/phase4_b_gold_lineage.sql`](sql/phase4_b_gold_lineage.sql).
+filter turns it into "what feeds this."** See [`sql/10_gold_lineage.sql`](sql/10_gold_lineage.sql).
 
 ### File-to-table lineage has no source table
 

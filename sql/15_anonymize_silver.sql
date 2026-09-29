@@ -399,11 +399,11 @@ ORDER BY c.column_name, t.tag_name;
 -- before designing a mask at all.
 
 -- 7b. THE BUILD SCRIPT MUST BE CHANGED TOO, or the next refill reintroduces the column.
---     phase4_a_silver.sql builds silver.customers with try_cast(date_of_birth AS DATE).
+--     09_silver.sql builds silver.customers with try_cast(date_of_birth AS DATE).
 --     INSERT OVERWRITE from that script would recreate the exact risk this phase removed,
 --     and nothing would report it - the table would simply have the column back.
 --     THIS IS THE STEP THAT GETS SKIPPED. Do it in the same pass.
--- RESULT, Sep 28 2026: phase4_a_silver.sql UPDATED - CREATE, INSERT OVERWRITE refill,
+-- RESULT, Sep 28 2026: 09_silver.sql UPDATED - CREATE, INSERT OVERWRITE refill,
 -- quality check, tag statement, column comment and owner persona check. quarantine_customers
 -- DELIBERATELY KEEPS date_of_birth with pii_type='dob': it still holds full dates and still
 -- needs the mask. Only silver.customers went structural.

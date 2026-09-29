@@ -337,7 +337,7 @@ ALTER TABLE prod_commerce.silver.customers ALTER COLUMN created_at COMMENT
   'When the customer record was created in the source system - the account opening date, used for cohort and tenure analysis. Distinct from _ingested_at (when we loaded it) and _silver_built_at (when we last rebuilt this table): only this one is a fact about the customer.';
 ALTER TABLE prod_commerce.silver.orders ALTER COLUMN order_date COMMENT
   'Date the order was placed, typed from the bronze text value. The date every revenue figure is grouped by, so it defines which period an order counts in. Orders dated in the future are rejected to quarantine_orders as future_order_date rather than allowed to inflate a forecast.';
--- The value list here is COPIED from phase1_d_comments_bronze.sql, which verified it against
+-- The value list here is COPIED from 04_comments.sql, which verified it against
 -- the data. Retyping it from memory dropped COP on the first attempt - a correct record
 -- degraded by being rewritten rather than copied.
 ALTER TABLE prod_commerce.silver.orders ALTER COLUMN currency COMMENT
