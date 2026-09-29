@@ -296,18 +296,56 @@ SHOW POLICIES ON CATALOG prod_commerce;
 -- `dob` instead of `dob_date` would have stripped both, and the two names differ by five
 -- characters - which is the argument for the tag-value check ABOVE the drop, not after it.
 --
--- COUNT TO RECONCILE, not smoothed over: the domain record states "7 catalog-level ABAC
--- policies", and 7 remain AFTER removing one. Both are probably right - the record likely
--- predates mask_dob_date, which was added later as the fix for the type-mismatch finding -
--- but that is an inference, not a check. Confirm against the Phase 3 script before quoting
--- either number anywhere it will be read as fact.
+-- COUNT TO RECONCILE, not smoothed over: an earlier note in this build states "7
+-- catalog-level ABAC policies", and 7 remain AFTER removing one. Both are probably right:
+-- that note likely predates mask_dob_date, which was added later as the fix for the
+-- type-mismatch finding. But that is an inference, not a check. Confirm against the
+-- Phase 3 script before quoting either number anywhere it will be read as fact.
 
 -- 5b. Retire the governed-tag ALLOWED VALUE too, now its last user is gone.
 --     This is account-level and may not be permitted on Free Edition. Attempt it and
 --     record the outcome either way - a vocabulary that only ever grows is a vocabulary
 --     nobody can reason about, and "we could not remove it" is a finding, not a failure.
---     (UI path: Catalog > Tag policies > pii_type > edit allowed values.)
--- RESULT: <record whether dob_date could be removed from the pii_type governed tag>
+--     (UI path, CORRECTED Sep 28 2026 after walking it: **Catalog > Govern > Governed Tags >
+--      pii_type > Allowed values**. The path guessed here first - "Catalog > Tag policies" -
+--      does not exist. A guessed UI path is an instruction someone will follow into a dead end.)
+--
+-- RESULT, Sep 28 2026. It was answered indirectly first, by the fault-seeding run in
+-- 18_state_suite.sql rather than by attempting it: seeding `SET TAGS ('pii_type' =
+-- 'dob_date')` on a column SUCCEEDED, with no refusal. So the retirement above had removed
+-- the POLICY and the FUNCTION but never the VOCABULARY entry.
+--
+-- The consequence is a silent one: a column can be tagged with a value whose policy does not
+-- exist, and nothing objects at write time. The tag looks like classification, appears in
+-- every coverage report as a classified column, and protects nothing. **A governed tag
+-- enforces its allowed values at SET time, so a value left in the vocabulary is a live
+-- footgun long after the control behind it is gone.**
+-- Retiring a control therefore has THREE steps, not two: drop the policy, drop the function,
+-- AND remove the value from the governed tag. Only the third one prevents reintroduction.
+--
+-- **CLOSED Sep 28 2026 - the third step is now done.** `dob_date` removed from the pii_type
+-- governed tag via Catalog > Govern > Governed Tags > pii_type > Allowed values. The control
+-- is now PREVENTIVE rather than detective: the same ALTER that succeeded an hour earlier is
+-- refused with
+--   [INVALID_PARAMETER_VALUE.UC_TAG_POLICY_VALUE_NOT_ALLOWED] Tag value dob_date is not an
+--   allowed value for tag policy key pii_type. Allowed values: [name, email, phone,
+--   national_id, address, dob, payment_card].
+-- The error names the rejected value, the policy key AND the full allowed list - self-
+-- explaining in the same way a CHECK rejection is, and the opposite of a mask failure.
+-- B5 in the assertion suite stays as the detective backstop.
+--
+-- A SECOND DEFECT ON THE SAME SCREEN, fixed by the same edit: the tag's own DESCRIPTION
+-- listed SEVEN values while the policy enforced EIGHT - `dob_date` was added in Phase 3 and
+-- never written into the prose. The two had disagreed for days, and the prose is what a
+-- human reads to learn what is allowed. **A governed tag carries its enumeration twice, in
+-- the enforced list and in its description, and nothing keeps them in step.**
+-- Removing dob_date reconciled both, by accident rather than by design - worth a check of
+-- its own, since the next value added will desynchronise them again.
+--
+-- UI HAZARD worth recording: on the Allowed values screen a row was ALREADY CHECKED (`name`)
+-- when the page opened. Clicking "Remove value" without looking would have deleted the value
+-- seven columns depend on and that mask_full matches. **Read which row is selected before
+-- confirming a destructive action in a list UI** - the default selection is not always none.
 
 -- Note `dob` (the STRING mask, used by bronze.customers and silver.quarantine_customers)
 -- STAYS. Only `dob_date` retires. Deleting both would strip the mask from two tables that

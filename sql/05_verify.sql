@@ -14,8 +14,8 @@
 --     but only for a reader who knows whose view they describe. That is what was missing.
 --   * Re-running any of this as a narrower identity should return FEWER objects in check 5.
 --     If check 5 still reads 26 under a persona, the persona is over-privileged.
--- See item 15: a coverage check must assert how many objects it EXPECTED to inspect, so
--- seeing fewer fails loudly instead of passing quietly.
+-- See 18_state_suite.sql, control A1: a coverage check must assert how many objects it
+-- EXPECTED to inspect, so seeing fewer fails loudly instead of passing quietly.
 
 -- 1. Structure: only designed schemas, no auto-created `default`
 SHOW SCHEMAS IN prod_commerce;   -- bronze, gold, governance, information_schema, landing, silver

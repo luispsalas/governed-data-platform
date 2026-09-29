@@ -141,7 +141,7 @@ ALTER TABLE prod_commerce.silver.customers ALTER COLUMN date_of_birth COMMENT
 
 -- NOTE the better long-term answer is to not store a maskable date in silver at all
 -- (birth_year or an age band), which removes the mask from the read path entirely. Deferred
--- to the anonymization workflow, backlog item 8, as its worked example.
+-- to the anonymization workflow in 15_anonymize_silver.sql, as its worked example.
 
 -- ---------------------------------------------------------------------------
 -- Row filter: only analyst_eu is filtered; everyone else is unaffected by this policy.
