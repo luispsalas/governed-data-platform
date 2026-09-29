@@ -504,10 +504,18 @@ found, absent, could not determine — and make the third loud.
 
 ### The worked example
 
-This build ends with a state-assertion suite: one re-runnable script checking the entire
-intended end state, emitting one row per control with `expected` and `actual` side by side.
-Twenty controls covering structure, ownership, metadata coverage, tag vocabulary, the full
-privilege matrix, policies and data invariants.
+This build ends with a state-assertion suite in two halves: a read-only discovery pass
+([`17_state_discovery.sql`](sql/17_state_discovery.sql)) that prints what the system actually
+holds, and the suite proper ([`18_state_suite.sql`](sql/18_state_suite.sql)), a re-runnable
+script checking the entire intended end state and emitting one row per control with
+`expected` and `actual` side by side. Twenty controls covering structure, ownership, metadata
+coverage, tag vocabulary, the full privilege matrix, policies and data invariants.
+
+**The split is the point.** Writing the assertions directly means getting the expected values
+from one of two bad places: memory, which invents a state that was never designed, or the
+live system, which ratifies whatever is currently there — defects included — and then passes
+forever because it is comparing the system against itself. Discovery first, then judge each
+result as a design constant, an invariant or a fixture fact, then assert only the first two.
 
 Two things about it are worth more than the suite itself.
 

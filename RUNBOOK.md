@@ -16,33 +16,36 @@
 Every statement used to build this is in `sql/`, in the order it was run. Each script carries
 its own recorded results in comments, including the ones that failed and why.
 
-| | Script | Section |
-|---|---|---|
-| 1 | [`01_setup.sql`](sql/01_setup.sql) | [Architecture](#2-architecture) |
-| 2 | [`02_bronze.sql`](sql/02_bronze.sql) | [Architecture](#2-architecture) |
-| 3 | [`03_tags.sql`](sql/03_tags.sql) | [Classification](#3-classification-taxonomy) |
-| 4 | [`04_comments.sql`](sql/04_comments.sql) | [Classification](#3-classification-taxonomy) |
-| 5 | [`05_verify.sql`](sql/05_verify.sql) | [Verification](#8-how-each-control-was-verified) |
-| 6 | [`06_grants.sql`](sql/06_grants.sql) | [Access control](#4-access-control) |
-| 7 | [`07_persona_tests.sql`](sql/07_persona_tests.sql) | [Verification](#8-how-each-control-was-verified) |
-| 8 | [`08_masks.sql`](sql/08_masks.sql) | [Masking and row-level security](#5-masking-and-row-level-security) |
-| 9 | [`09_silver.sql`](sql/09_silver.sql) | [Architecture](#2-architecture) |
-| 10 | [`10_gold_lineage.sql`](sql/10_gold_lineage.sql) | [Architecture](#2-architecture) |
-| 11 | [`11_constraints.sql`](sql/11_constraints.sql) | [Data quality](#6-data-quality-controls) |
-| 12 | [`12_constraint_tests.sql`](sql/12_constraint_tests.sql) | [Data quality](#6-data-quality-controls) |
-| 13 | [`13_expectations.sql`](sql/13_expectations.sql) | [Data quality](#6-data-quality-controls) |
-| 14 | [`15_anonymize_silver.sql`](sql/15_anonymize_silver.sql) | [Anonymization](#7-anonymization) |
-| 15 | [`16_anonymize_gold.sql`](sql/16_anonymize_gold.sql) | [Anonymization](#7-anonymization) |
+| Script | Section |
+|---|---|
+| [`01_setup.sql`](sql/01_setup.sql) | [Architecture](#2-architecture) |
+| [`02_bronze.sql`](sql/02_bronze.sql) | [Architecture](#2-architecture) |
+| [`03_tags.sql`](sql/03_tags.sql) | [Classification](#3-classification-taxonomy) |
+| [`04_comments.sql`](sql/04_comments.sql) | [Classification](#3-classification-taxonomy) |
+| [`05_verify.sql`](sql/05_verify.sql) | [Verification](#8-how-each-control-was-verified) |
+| [`06_grants.sql`](sql/06_grants.sql) | [Access control](#4-access-control) |
+| [`07_persona_tests.sql`](sql/07_persona_tests.sql) | [Verification](#8-how-each-control-was-verified) |
+| [`08_masks.sql`](sql/08_masks.sql) | [Masking and row-level security](#5-masking-and-row-level-security) |
+| [`09_silver.sql`](sql/09_silver.sql) | [Architecture](#2-architecture) |
+| [`10_gold_lineage.sql`](sql/10_gold_lineage.sql) | [Architecture](#2-architecture) |
+| [`11_constraints.sql`](sql/11_constraints.sql) | [Data quality](#6-data-quality-controls) |
+| [`12_constraint_tests.sql`](sql/12_constraint_tests.sql) | [Data quality](#6-data-quality-controls) |
+| [`13_expectations.sql`](sql/13_expectations.sql) | [Data quality](#6-data-quality-controls) |
+| [`14_mv_governance.sql`](sql/14_mv_governance.sql) | [Masking and row-level security](#5-masking-and-row-level-security) |
+| [`15_anonymize_silver.sql`](sql/15_anonymize_silver.sql) | [Anonymization](#7-anonymization) |
+| [`16_anonymize_gold.sql`](sql/16_anonymize_gold.sql) | [Anonymization](#7-anonymization) |
+| [`17_state_discovery.sql`](sql/17_state_discovery.sql) | [Verification](#8-how-each-control-was-verified) |
+| [`18_state_suite.sql`](sql/18_state_suite.sql) | [Verification](#8-how-each-control-was-verified) |
 
 **The numbers are run order, not section order.** They say what to run when; the right-hand
 column says where each one is explained. Anonymization runs fifteenth and sixteenth because it
 was designed after the masking it replaces, which is the honest order and the reason the
 masking section still describes a control this build later retired.
 
-**Three numbers are missing (14, 17, 18), and that is deliberate.** Those scripts exist and
-are not published here yet: a materialized-view governance test, and the two halves of the
-state-assertion suite described in section 8. The gap is left visible rather than closed by
-renumbering, because a contiguous sequence would imply the set is complete.
+**The set is complete.** Every script run against the platform is here, including the
+failures and the retractions. Scripts 14, 17 and 18 were held back for a first pass and
+published afterwards: a materialized-view governance test, and the two halves of the
+state-assertion suite described in section 8.
 
 ---
 
