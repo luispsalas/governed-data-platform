@@ -287,6 +287,17 @@ personally owned, quietly reintroducing the single-person dependency the group-o
 decision existed to remove, and it surfaced on a **lineage screenshot** — because no query in
 the verification suite had ever asked who owns anything.
 
+**This is not an exotic failure.** Databricks' own
+[Unity Catalog best practices](https://docs.databricks.com/aws/en/data-governance/unity-catalog/best-practices)
+say to always assign ownership of production catalogs and schemas to groups rather than
+individual users, and to avoid direct grants to users wherever possible. The failure mode is
+documented, the consequence is the familiar one — permissions orphaned when someone leaves,
+ownership nobody can trace — and this build followed the guidance from the start and **still**
+ended up with six personally owned tables.
+
+Which is the point worth taking: **knowing a failure mode does not prevent it. Only a check
+that runs without being remembered does.**
+
 The standing check now runs after any phase that creates objects:
 
 ```sql
