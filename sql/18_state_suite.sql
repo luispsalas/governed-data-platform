@@ -390,7 +390,10 @@ ORDER BY id;
 --     names the hole, because the omission is invisible in a clean report.
 --
 -- E3. DONE Sep 28 2026 - TEN CONTROLS SEEDED, TEN FIRED CORRECTLY, ALL SEEDS REVERSED AND
---     THE REVERSAL VERIFIED. A1 A2 A3 A4 B1 B2 B5 C1 C2 C4 + C0/B4 already proven by their
+--     THE REVERSAL VERIFIED. **The statements themselves are in 19_remediation.sql**, in a
+--     non-executable appendix; until Sep 29 2026 they were described here and recorded
+--     nowhere, which made the strongest evidence in this build the one part of it a reader
+--     could not reproduce. A1 A2 A3 A4 B1 B2 B5 C1 C2 C4 + C0/B4 already proven by their
 --     own real defects earlier the same day.
 --
 --     METHOD WORTH REUSING: **for a control that COMPARES expectation to reality, seed the

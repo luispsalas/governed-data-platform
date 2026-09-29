@@ -36,6 +36,7 @@ its own recorded results in comments, including the ones that failed and why.
 | [`16_anonymize_gold.sql`](sql/16_anonymize_gold.sql) | [Anonymization](#7-anonymization) |
 | [`17_state_discovery.sql`](sql/17_state_discovery.sql) | [Verification](#8-how-each-control-was-verified) |
 | [`18_state_suite.sql`](sql/18_state_suite.sql) | [Verification](#8-how-each-control-was-verified) |
+| [`19_remediation.sql`](sql/19_remediation.sql) | [Verification](#8-how-each-control-was-verified) |
 
 **The numbers are run order, not section order.** They say what to run when; the right-hand
 column says where each one is explained. Anonymization runs fifteenth and sixteenth because it
@@ -46,6 +47,13 @@ masking section still describes a control this build later retired.
 failures and the retractions. Scripts 14, 17 and 18 were held back for a first pass and
 published afterwards: a materialized-view governance test, and the two halves of the
 state-assertion suite described in section 8.
+
+**Running 01 to 18 in order ends with three FAILING controls, and that is correct.** The
+suite found two real defects in this build, and `19_remediation.sql` is what fixed them.
+Folding those fixes back into the scripts that create the objects would have produced a
+clean run that reproduces a state which was never built, and would have deleted the only
+evidence that the suite does anything. Run 19, then run 18 again: watching a check stop
+failing is worth more than watching it pass the first time.
 
 ---
 
