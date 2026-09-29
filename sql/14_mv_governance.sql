@@ -9,8 +9,15 @@
 -- streaming tables describe them only as EVALUATED on refresh:
 --   "When a pipeline refreshes a materialized view or streaming table, it evaluates policies
 --    using the pipeline owner's or run-as identity."
--- On governed TAGS on a materialized view the documentation says nothing. So this is tested,
--- not read.
+-- On governed TAGS on a materialized view the documentation said nothing at the time. So this
+-- was tested, not read.
+--
+-- UPDATE Sep 29 2026, on review against current docs: **the documentation has since caught
+-- up.** The ABAC page now states plainly that row filter and column mask policies are
+-- supported on tables, MATERIALIZED VIEWS and streaming tables, and ABAC with governed tags
+-- went GA in May 2026. The experiment below was right and is no longer the only evidence.
+-- Kept because the REASONING is the durable part - and because a finding that later appears
+-- in the docs is worth more as a record of how it was reached than as news.
 --
 -- THE DESIGN OF THE TEST: tag `status` - a column with no sensitivity at all - as
 -- pii_type = 'name', which attracts mask_full and returns '***'. An unambiguous signal on a

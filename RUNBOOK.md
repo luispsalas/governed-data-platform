@@ -255,6 +255,15 @@ A matrix listing only deliberate grants is wrong by omission. Auditing what the 
 grants by default is a distinct task from deciding what to grant, and it is easy to skip
 because nothing prompts you to do it.
 
+**The BROWSE decision goes against the common recommendation, deliberately.** Databricks
+teaching material generally presents `BROWSE` as a discoverability win and suggests granting
+it broadly to `account users`. That advice is sound where metadata is neutral. It is not
+neutral here: this catalog's column names, classification tags and descriptions are a precise
+map of where the personal data lives, so granting broad metadata discovery on production
+hands out the index to the PII without handing out the rows. Kept on `dev_commerce`, where
+discoverability helps and the data is synthetic. **The general advice is not wrong — it is
+advice about a catalog whose metadata does not itself describe sensitive data.**
+
 ### Compute is a separate gate
 
 Data access and the ability to run a query are governed independently. A user removed from
@@ -727,7 +736,7 @@ completeness — the same failure as a catch-all category anywhere else.
 | **C1.1** | Confidential information is identified and maintained | Every column carries a `classification` tag from a governed vocabulary enforced at write time, plus a description; coverage is asserted, not assumed | [`03_tags.sql`](sql/03_tags.sql), [`04_comments.sql`](sql/04_comments.sql); suite B1–B4 | **Evidenced** |
 | **CC6.2** | Users registered and authorized before credentials are issued | Access is granted to groups, never to individuals, so authorization is a group membership decision | [`06_grants.sql`](sql/06_grants.sql) | **Partial** — no joiner/mover/leaver process exists |
 | **CC6.7** | Restricts transmission, movement and removal of information | Column masks and a row filter limit what leaves the serving layer; the published aggregate carries no identifiers at all | [`08_masks.sql`](sql/08_masks.sql), [`16_anonymize_gold.sql`](sql/16_anonymize_gold.sql); suite D6 | **Partial** — controls exposure, not egress |
-| **CC7.2** | System components monitored for anomalies | An audit view over `system.access.audit`, scoped to this catalog, readable by the auditor persona | [`06_grants.sql`](sql/06_grants.sql), [`19_remediation.sql`](sql/19_remediation.sql) | **Partial** — the record exists; nobody reviews it on a cadence |
+| **CC7.2** | System components monitored for anomalies | An audit view over `system.access.audit`, scoped to this catalog, readable by the auditor persona | [`06_grants.sql`](sql/06_grants.sql), [`19_remediation.sql`](sql/19_remediation.sql) | **Partial** — the record exists; nobody reviews it on a cadence, and it records access *through Databricks* only (see below) |
 | **C1.2** | Confidential information is disposed of | Structural anonymization: `date_of_birth` is replaced by `birth_year`, so the sensitive precision is not stored rather than hidden | [`15_anonymize_silver.sql`](sql/15_anonymize_silver.sql) | **Partial** — disposal of precision, not a retention policy |
 | **P4** | Use, retention and disposal of personal information | k-anonymity at k≥5 on all three published aggregates, enforced by a CHECK constraint | [`16_anonymize_gold.sql`](sql/16_anonymize_gold.sql); suite D3–D5 | **Partial** — limits use; no retention schedule |
 | **CC8.1** | Changes are authorized, designed, tested and approved | Scripts are versioned and re-runnable, and the suite detects drift | — | **Not evidenced** — versioning is not change management; no approval step exists |
@@ -746,6 +755,20 @@ the right people can get in — and a missing grant is discovered the moment som
 work. The expensive failure is the reverse: a grant nobody intended, which nothing surfaces
 because everything keeps working. Asserting that **no grant exists outside the matrix** is the
 half that has no natural discovery path, and it is worth showing over any amount of green.
+
+### What the audit log does not see
+
+**The audit log records access through Databricks, not access to the storage underneath it.**
+Unity Catalog does not govern or log reads and writes performed directly against cloud object
+storage by an external system. For this build that distinction costs nothing — every table is
+managed, nothing is externally accessed, and every read goes through the platform. It becomes
+a real gap the moment external tables or credential vending enter the picture, because a
+vended credential is used against storage directly and the read does not appear here.
+
+Worth stating for the same reason the constraint gap in section 8 is stated: **a control with
+an unnamed boundary reads as complete coverage**, and an auditor pointed at this view would
+reasonably assume it answers "who read this data" in every case. It answers it for every case
+*this build has*.
 
 ### The honest bottom line
 
