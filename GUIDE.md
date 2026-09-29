@@ -43,9 +43,10 @@ filters, enforced data-quality constraints, anonymization in two forms, and a st
 suite that checks the whole thing in one pass. Every control was tested by signing in as each
 kind of user.
 
-**What was not.** Metastore creation and identity federation are described rather than
-performed — they need account-level access this build did not have. Compliance control
-mapping is not done. Nothing here ran at enterprise scale, on real personal data, or under
+**What was not.** Metastore creation and identity federation are documented rather than
+performed — they need account-level access this build did not have. Controls are mapped to
+SOC 2 criteria, but a mapping is not an assessment: nothing here evidences that a control
+operated over a period, which is what an audit asks. Nothing here ran at enterprise scale, on real personal data, or under
 a change-management process. **Where this guide states a limit, it is a limit of this build
 unless it says otherwise** — and it tries hard to say which.
 

@@ -134,9 +134,11 @@ identifiers.
 Stated plainly, because a runbook that claims coverage it does not have is worse than a
 short one.
 
-- **Compliance control mapping.** The controls exist and are tested; they are not yet mapped
-  to named SOC 2 or GDPR clauses.
-- **Account-level setup.** Metastore creation and identity federation are described, not
+- **Operating effectiveness.** Controls are mapped to SOC 2 criteria and the assertion suite
+  re-runs on demand, but nobody runs it on a cadence, nobody reviews the audit log, and no
+  change requires approval. That is control design, not evidence a control operated over
+  a period. GDPR clauses are not mapped at all.
+- **Account-level setup.** Metastore creation and identity federation are documented, not
   performed; a single workspace cannot demonstrate them.
 - **Cross-platform policy.** The same rules expressed in a second platform, and the view
   across both, are not built.

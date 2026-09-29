@@ -9,7 +9,9 @@
 6. [Data quality controls](#6-data-quality-controls)
 7. [Anonymization](#7-anonymization)
 8. [How each control was verified](#8-how-each-control-was-verified)
-9. [What is NOT built yet](#9-what-is-not-built-yet)
+9. [Compliance control mapping (SOC 2)](#9-compliance-control-mapping-soc-2)
+10. [Account-level setup](#10-account-level-setup)
+11. [What is NOT built yet](#11-what-is-not-built-yet)
 
 ### The scripts, in run order
 
@@ -689,15 +691,180 @@ Two caveats a reader should not have to discover:
 
 ---
 
-## 9. What is NOT built yet
+## 9. Compliance control mapping (SOC 2)
+
+**Read this first, because the heading promises more than the section delivers.**
+
+This maps controls that were *built and tested here* to the SOC 2 Trust Services Criteria they
+speak to. It is **not** a SOC 2 assessment, and nothing here is evidence of compliance. Three
+reasons, and they are not disclaimers — they change what the table below can be used for.
+
+**SOC 2 examines operating effectiveness over a period of time; this is a point-in-time
+build.** A Type II report asks whether a control ran as described for six or twelve months. The
+assertion suite proves a control is in place *today* and can be re-run, which is the raw
+material for that evidence, not the evidence itself.
+
+**Most of SOC 2 is organizational, and none of that is here.** The Security category alone
+carries 33 criteria across nine groups, and the majority concern the control environment,
+communication, risk assessment and monitoring *activities* — policies, ownership, review
+cadence, board oversight. A catalog cannot demonstrate any of them. The criteria this build
+touches are concentrated in **CC6 (logical access)** and **C1 (confidentiality)**, which is a
+narrow slice deliberately.
+
+**An auditor maps controls to criteria, not the other way around.** Designing to a criterion
+number produces a control shaped to be auditable rather than one shaped to work. Everything
+below was built because it was the right control, and mapped afterwards.
+
+### What this build evidences
+
+Three states, not two. A single pass/fail column would absorb the partial cases and read as
+completeness — the same failure as a catch-all category anywhere else.
+
+| Criterion | What it asks for | What exists here | Evidence | State |
+|---|---|---|---|---|
+| **CC6.1** | Logical access security over protected information assets | Unity Catalog grants at catalog, schema, table and volume level; ABAC policies attached at catalog scope | [`06_grants.sql`](sql/06_grants.sql), [`08_masks.sql`](sql/08_masks.sql); suite C1, C2, C3 | **Evidenced** |
+| **CC6.3** | Role-based access, least privilege, segregation of duties | A five-group matrix where each grant exists for a stated reason — one group grants nothing and exists only to narrow scope, and `analyst` is denied bronze at `USE SCHEMA` because bronze holds raw card numbers and national IDs | [`06_grants.sql`](sql/06_grants.sql); suite C1 and **C2** | **Evidenced** |
+| **C1.1** | Confidential information is identified and maintained | Every column carries a `classification` tag from a governed vocabulary enforced at write time, plus a description; coverage is asserted, not assumed | [`03_tags.sql`](sql/03_tags.sql), [`04_comments.sql`](sql/04_comments.sql); suite B1–B4 | **Evidenced** |
+| **CC6.2** | Users registered and authorized before credentials are issued | Access is granted to groups, never to individuals, so authorization is a group membership decision | [`06_grants.sql`](sql/06_grants.sql) | **Partial** — no joiner/mover/leaver process exists |
+| **CC6.7** | Restricts transmission, movement and removal of information | Column masks and a row filter limit what leaves the serving layer; the published aggregate carries no identifiers at all | [`08_masks.sql`](sql/08_masks.sql), [`16_anonymize_gold.sql`](sql/16_anonymize_gold.sql); suite D6 | **Partial** — controls exposure, not egress |
+| **CC7.2** | System components monitored for anomalies | An audit view over `system.access.audit`, scoped to this catalog, readable by the auditor persona | [`06_grants.sql`](sql/06_grants.sql), [`19_remediation.sql`](sql/19_remediation.sql) | **Partial** — the record exists; nobody reviews it on a cadence |
+| **C1.2** | Confidential information is disposed of | Structural anonymization: `date_of_birth` is replaced by `birth_year`, so the sensitive precision is not stored rather than hidden | [`15_anonymize_silver.sql`](sql/15_anonymize_silver.sql) | **Partial** — disposal of precision, not a retention policy |
+| **P4** | Use, retention and disposal of personal information | k-anonymity at k≥5 on all three published aggregates, enforced by a CHECK constraint | [`16_anonymize_gold.sql`](sql/16_anonymize_gold.sql); suite D3–D5 | **Partial** — limits use; no retention schedule |
+| **CC8.1** | Changes are authorized, designed, tested and approved | Scripts are versioned and re-runnable, and the suite detects drift | — | **Not evidenced** — versioning is not change management; no approval step exists |
+| **CC1–CC5, CC9, P1–P3, P5–P8** | Control environment, communication, risk assessment, monitoring activities, risk mitigation, and most of the privacy lifecycle | Nothing | — | **Not evidenced** |
+
+### The two that are worth an interview conversation
+
+**C1.1 is where a catalog earns its keep.** The requirement to identify and maintain
+confidential information is usually answered with a spreadsheet that is accurate on the day it is written. Here the
+identification *is* the enforcement mechanism: the `classification` tag drives the ABAC policy,
+so a column that is not classified is not protected, and the suite fails when one appears. The
+control and the inventory are the same object, which is why they cannot drift apart.
+
+**C2 in the suite is the one an auditor would actually ask for.** Most access evidence answers whether
+the right people can get in — and a missing grant is discovered the moment someone cannot
+work. The expensive failure is the reverse: a grant nobody intended, which nothing surfaces
+because everything keeps working. Asserting that **no grant exists outside the matrix** is the
+half that has no natural discovery path, and it is worth showing over any amount of green.
+
+### The honest bottom line
+
+**A control that works and a control you can evidence are different achievements.** Everything
+in the Evidenced rows would survive a walkthrough: there is a statement that implements it, a
+test that exercises it, and a re-runnable assertion that catches its removal. Nothing here
+addresses whether a human reviews the audit log, who approves a change to the matrix, or what
+happens when someone leaves — and those are most of a SOC 2 engagement.
+
+*Criteria numbering: AICPA Trust Services Criteria (2017, with revised points of focus, 2022).
+The criteria descriptions above are paraphrased; the authoritative text is the AICPA's. Numbers
+were checked against published references rather than recalled, after an ISO clause number in a
+neighboring project turned out to be wrong.*
+
+---
+
+## 10. Account-level setup
+
+Everything in this runbook happens *inside* a metastore. This section covers the layer
+underneath it — the part that was **described rather than performed**, because Databricks Free
+Edition does not grant metastore administrator rights. It is written so the gap is a stated
+boundary rather than a silent one.
+
+### The thing most guides get wrong about this
+
+**You probably do not create a metastore.** Since November 8, 2023, Databricks automatically
+enables new workspaces for Unity Catalog, which includes provisioning a metastore in the
+workspace's region if one does not already exist. Manual creation is the exception — an older
+account, or a region your organization has not used before.
+
+That matters because the instructions are widely reproduced as though they were step one of
+every deployment. Following them on a modern account leads to a second metastore you did not
+need, in a region where you already had one.
+
+**Auto-created metastores come with no metastore-level storage**, which is the right default
+and is covered below.
+
+### The hierarchy, and why a Snowflake habit misleads here
+
+> **Coming from Snowflake?** Snowflake has no metastore. The **account** is the top of the
+> world: databases sit directly inside it, and region is a property of the account itself.
+> Databricks inserts a layer that has no Snowflake equivalent:
+>
+> `account` → **`metastore`** (one per region) → `catalog` → `schema` → table/view/volume
+>
+> **The metastore, not the workspace, is the governance boundary.** Workspaces are *attached*
+> to a metastore, and every workspace attached to the same metastore sees the same catalogs
+> and the same grants. The expensive wrong assumption is treating a workspace the way you
+> would treat a Snowflake account — as an isolation boundary. It is not one. Two teams each given
+> their own workspace on a shared metastore have been given a shared catalog namespace and a
+> shared permission model.
+>
+> The isolation boundary you actually reach for is the **catalog**, which is why this build
+> separates `prod_commerce` from `dev_commerce` rather than separating workspaces.
+
+### If you do need to create one
+
+1. **Decide whether you need metastore-level storage before you start.** It is optional. It
+   exists for a data-isolation model that stores managed tables centrally for multiple
+   workspaces. The standard path is **catalog-level** managed storage, and it is what
+   automatically created metastores use.
+2. Account console → **Catalog** → **Create metastore**.
+3. Give it a name and a **region**. One metastore per region is the model — if your
+   organization operates in three regions, that is three metastores, and objects do not span
+   them.
+4. Optionally supply the storage bucket path and the IAM role, if step 1 said you need it.
+5. **Assign workspaces.** This is what enables those workspaces for Unity Catalog. An account
+   admin can also enable auto-assignment so new workspaces in that region attach on creation.
+6. **Reassign the metastore admin role to a group.** Databricks recommends this explicitly, and
+   it is the same rule this build applies one level down — ownership goes to a group, never a
+   person, because a person leaves and takes the object with them.
+
+**A note on removing metastore-level storage later:** the storage roots are pushed down into
+the individual catalogs, and from then on **every new catalog must be given its own storage
+location**. That is a change to how people create catalogs, not just a configuration change.
+
+### The most dangerous role in Unity Catalog
+
+A metastore admin manages access to every securable object across every attached workspace, and
+can **delete the metastore**, which makes everything it manages inaccessible. There is no
+catalog-level blast radius on that action.
+
+Databricks' own guidance is worth following literally: the role is **optional**, and where a
+configuration task needs it, assign yourself, do the task, and unassign yourself afterwards.
+**Treat metastore admin as a task you hold briefly, not a title someone keeps** — the same
+reasoning behind `analyst_eu` granting nothing, or ownership living in a group. A standing
+privilege nobody uses daily is one nobody notices is still held.
+
+### Identity
+
+Users, service principals and groups are **account-level** objects, assigned down into
+workspaces. That is why every grant in section 4 names a group rather than a person: the group
+is the account-level identity, and the matrix survives people joining and leaving.
+
+Identity federation and SCIM provisioning from an external identity provider are the part a
+single workspace cannot demonstrate, and are not claimed here.
+
+### What this means for the build
+
+Not a limitation worth apologizing for, but worth stating precisely: this runbook demonstrates
+**governance within a metastore** — classification, access, masking, quality, anonymization and
+verification. It does not demonstrate metastore provisioning, multi-region topology, or
+identity federation. Those are account-administration tasks, and a single Free Edition
+workspace is the wrong instrument for them.
+
+*Verified against the current Databricks Unity Catalog documentation, September 2026.*
+
+---
+
+## 11. What is NOT built yet
 
 Stated plainly, because a runbook claiming coverage it does not have is worse than a short
 one.
 
 | Not built | What exists instead |
 |---|---|
-| **Compliance control mapping** | Controls that are built and tested, not yet mapped to named SOC 2 or GDPR clauses |
-| **Account-level setup** | Metastore creation, identity federation and workspace binding described rather than performed — a single workspace cannot demonstrate them |
+| **Operating effectiveness** | Controls are mapped to SOC 2 criteria in [section 9](#9-compliance-control-mapping-soc-2), and the assertion suite can be re-run on demand. Nobody runs it on a cadence, nobody reviews the audit log, and no change to the matrix requires approval — so there is control *design*, not evidence a control operated over a period |
+| **GDPR clause mapping** | Not started. The anonymization work in [section 7](#7-anonymization) is the raw material for one, but no article is cited and none should be inferred |
+| **Account-level setup** | Metastore creation, identity federation and workspace binding are documented in [section 10](#10-account-level-setup) and **not performed** — a single Free Edition workspace cannot demonstrate them |
 | **Cross-platform policy** | Nothing. Expressing the same rules in a second platform, and viewing both through one catalog, is not started |
 
 ### One thing done differently because of the environment
