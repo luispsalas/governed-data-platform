@@ -244,6 +244,18 @@ expected_grants AS (
     'account users | SELECT | TABLE | prod_commerce.gold.customer_profile_anonymized'
   )) AS g
 )
+-- C0: ADDED Oct 1 2026, NOT YET RUN IN THIS FORM. The header above reports a C0 result and
+-- calls C0 the gate for this section, but the published file never contained the row: the
+-- count was run by hand while debugging (0, then 50, then 19) and was not saved here. Without
+-- it, C2 PASSES on an empty CTE. It PASSES only when the check sees at least as many direct
+-- grants as the matrix expects, so a blind or narrowed identity FAILS rather than going quiet.
+SELECT 'C0' AS id, 'Positive control: the grants CTE can see the matrix' AS control,
+       concat('>= ', (SELECT cast(COUNT(*) AS STRING) FROM expected_grants)) AS expected,
+       cast(COUNT(*) AS STRING) AS actual,
+       CASE WHEN COUNT(*) >= (SELECT COUNT(*) FROM expected_grants) THEN 'PASS' ELSE 'FAIL' END AS status
+FROM actual_grants
+
+UNION ALL
 SELECT 'C1' AS id, 'Every grant in the matrix is present' AS control,
        '0 missing' AS expected,
        CASE WHEN COUNT(*) = 0 THEN '(none missing)' ELSE concat_ws(' ;; ', collect_list(g)) END AS actual,

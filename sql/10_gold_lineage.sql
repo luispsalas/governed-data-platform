@@ -54,6 +54,11 @@ GROUP BY c.region, date_trunc('MONTH', o.order_date), o.currency
 HAVING COUNT(DISTINCT o.customer_id) >= 5;       -- k-anonymity: no group small enough to identify anyone
 
 -- 2. Customer profile by region and segment. Same suppression rule.
+-- RUN-ORDER DEPENDENCY (noted Oct 1 2026): avg_age_years reads silver.customers.date_of_birth,
+-- which 15_anonymize_silver.sql later REMOVES. This works only because 10 runs before 15; a
+-- refill of this table after 15 fails with UNRESOLVED_COLUMN, and the column description
+-- below still says "computed from date_of_birth". The script is left as it was run. A rebuild
+-- must compute the age from birth_year instead (up to one year high).
 CREATE TABLE prod_commerce.gold.customer_segment_profile
 COMMENT 'Customer counts and marketing-consent rates by sales region and segment. Contains no personal data; groups of fewer than 5 customers are suppressed. consent_rate is the share of customers in the group who may lawfully be contacted, and is the number a campaign is sized against. Source: silver.customers.'
 AS

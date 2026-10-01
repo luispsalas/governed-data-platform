@@ -12,6 +12,7 @@
 -- SO THE HONEST ORDER IS THE ONE THAT ACTUALLY HAPPENED. Run 01-18 in sequence and the suite
 -- FAILS three controls:
 --   A4  gold.customer_profile_anonymized is owned by whoever created it, not by the group
+--       (and, in a from-scratch run, six more tables whose Sep 24 fix lives in section 3)
 --   B1  governance.audit_log has 6 columns with no classification
 --   B2  governance.audit_log has columns with no description
 -- Those failures are correct. This script is what turns them green, and running 18 again
@@ -101,6 +102,28 @@ GROUP BY 1, 2;
 --    this order deliberately: a suite you have watched fail and then watched pass is worth
 --    more than one that was green the first time you ran it.
 -- ===========================================================================
+
+-- ===========================================================================
+-- 3. THE EARLIER OWNERSHIP FIX, WRITTEN BACK Oct 1 2026.
+--    The six tables created by 09 and 10 were personally owned until Sep 24 2026, when a
+--    lineage screenshot exposed them (06_grants.sql, section 6). They were transferred by
+--    hand and the statements were never saved, so 01-18 run in order still left them with
+--    their creator, and A4 would FAIL on SEVEN tables in a from-scratch run, not one.
+--
+--    THESE STATEMENTS ARE RECONSTRUCTED, NOT RECOVERED. No record of the originals
+--    survives. The object list is certain: the six CREATE TABLE statements in 09 and 10,
+--    and the Sep 24 check in 06 confirming that only audit_log was left out. The statement
+--    form is the one 06 uses for every other table. Not yet run in this file.
+-- ===========================================================================
+ALTER TABLE prod_commerce.silver.customers               OWNER TO `commerce_data_owners`;
+ALTER TABLE prod_commerce.silver.quarantine_customers    OWNER TO `commerce_data_owners`;
+ALTER TABLE prod_commerce.silver.orders                  OWNER TO `commerce_data_owners`;
+ALTER TABLE prod_commerce.silver.quarantine_orders       OWNER TO `commerce_data_owners`;
+ALTER TABLE prod_commerce.gold.revenue_by_region_month   OWNER TO `commerce_data_owners`;
+ALTER TABLE prod_commerce.gold.customer_segment_profile  OWNER TO `commerce_data_owners`;
+
+-- Verify with the standing check in 06_grants.sql section 6: exactly one row,
+-- governance | audit_log | <the primary account>.
 
 -- ===========================================================================
 -- APPENDIX - THE FAULT-SEEDING STATEMENTS (Sep 28 2026).

@@ -513,7 +513,10 @@ This build ends with a state-assertion suite in two halves: a read-only discover
 holds, and the suite proper ([`18_state_suite.sql`](sql/18_state_suite.sql)), a re-runnable
 script checking the entire intended end state and emitting one row per control with
 `expected` and `actual` side by side. Twenty controls covering structure, ownership, metadata
-coverage, tag vocabulary, the full privilege matrix, policies and data invariants.
+coverage, tag vocabulary, the full privilege matrix, policies and data invariants, plus **C0**,
+the positive control that proves the access checks can see anything. C0 was run while the
+suite was built but was missing from the published file until October 2026; it has been added
+and not yet run in that form.
 
 **The split is the point.** Writing the assertions directly means getting the expected values
 from one of two bad places: memory, which invents a state that was never designed, or the

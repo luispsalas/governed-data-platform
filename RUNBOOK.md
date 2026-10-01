@@ -55,7 +55,9 @@ suite found two real defects in this build, and `19_remediation.sql` is what fix
 Folding those fixes back into the scripts that create the objects would have produced a
 clean run that reproduces a state which was never built, and would have deleted the only
 evidence that the suite does anything. Run 19, then run 18 again: watching a check stop
-failing is worth more than watching it pass the first time.
+failing is worth more than watching it pass the first time. `19` also carries the ownership
+transfers for six tables that were fixed by hand on Sep 24 and never saved. They are
+reconstructed rather than recovered, and are marked as such in the script.
 
 ---
 
@@ -767,6 +769,10 @@ the right people can get in — and a missing grant is discovered the moment som
 work. The expensive failure is the reverse: a grant nobody intended, which nothing surfaces
 because everything keeps working. Asserting that **no grant exists outside the matrix** is the
 half that has no natural discovery path, and it is worth showing over any amount of green.
+It is only evidence alongside **C0**, the positive control proving the check can see the
+grants at all. Without C0, C2 passes on an empty result. C0 was run while the suite was built
+but was missing from the published file until October 2026; it is now there, and has not yet
+been run in that form.
 
 ### What the audit log does not see
 
