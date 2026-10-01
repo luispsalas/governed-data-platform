@@ -17,7 +17,10 @@ inferring.
 
 **Both platforms do tag-driven policy.** It is tempting to assume that Databricks has ABAC while Snowflake has
 only hand-applied masking policies, and that is wrong: Snowflake has had tag-based masking
-and row access policies for years, and documents them as attribute-based access control. The
+for years, and documents tag-based policies as attribute-based access control. (Tag-based
+*row access* policies are still in public preview as of October 2026, per the
+[ABAC using tag-based policies](https://docs.snowflake.com/en/user-guide/tag-based-policies) page;
+a row access policy attached directly to a table is generally available.) The
 two models are genuinely similar in intent. **The differences are mechanical, and the
 mechanics are where designs break.**
 
@@ -88,7 +91,7 @@ membership decision here becomes a hierarchy decision there.
 
 | | Unity Catalog | Snowflake | Cost of assuming |
 |---|---|---|---|
-| `CHECK` constraints | **enforced** on Delta tables; a violating write fails | **not enforced** — informational | A rule you believe is enforced is documentation. This build uses CHECK constraints as real controls; that does not port. |
+| `CHECK` constraints | **enforced** on Delta tables; a violating write fails | **enforced** on standard tables since April 2026 (*"Check constraints are always enforced"*, [Overview of constraints](https://docs.snowflake.com/en/sql-reference/constraints-overview); generally available in release 10.12). A NULL result lets the row through on both. `COPY INTO` a table with CHECK constraints fails, so they belong downstream of the raw load. Unlike Unity Catalog, Snowflake lists them in `INFORMATION_SCHEMA.CHECK_CONSTRAINTS` | The controls port. The trap is now age: Snowflake designs older than April 2026 treat CHECK as documentation. *This row said "not enforced" until October 2026; corrected against the docs.* |
 | Secure views | no equivalent | `SECURE VIEW` | The documented Databricks alternative to policies is a dynamic view, and the vendor names its own drawbacks on the [ABAC vs table-level filters and masks](https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/abac-vs-rls-cm) page: dynamic views *"lack semantic metadata such as tags or policy definitions in system tables, which makes them harder to audit at scale,"* and *"Because they lack a `SecureView` barrier, they don't protect against probing attacks."* |
 
 Worth recording the *samenesses* too, or a crosswalk teaches distrust of instincts that are
@@ -178,7 +181,7 @@ logs. **Plan the audit story before enabling the integration, not after someone 
 
 ## Sources
 
-Checked September 2026. Every claim above traces to one of these; where they are silent, this
+Checked September 2026; the `CHECK` row and the tag-based row access note re-checked October 1, 2026. Every claim above traces to one of these; where they are silent, this
 document says so rather than filling the gap.
 
 **Databricks** — [Unity Catalog best practices](https://docs.databricks.com/aws/en/data-governance/unity-catalog/best-practices) ·
@@ -195,6 +198,7 @@ document says so rather than filling the gap.
 [ABAC using tag-based policies](https://docs.snowflake.com/en/user-guide/tag-based-policies) ·
 [Introduction to object tagging](https://docs.snowflake.com/en/user-guide/object-tagging) ·
 [Understanding row access policies](https://docs.snowflake.com/en/user-guide/security-row-intro) ·
+[Overview of constraints](https://docs.snowflake.com/en/sql-reference/constraints-overview) ·
 [Overview of access control](https://docs.snowflake.com/en/user-guide/security-access-control-overview) ·
 [Configure a catalog integration for Unity Catalog](https://docs.snowflake.com/en/user-guide/tables-iceberg-configure-catalog-integration-rest-unity) ·
 [Use a catalog-linked database](https://docs.snowflake.com/en/user-guide/tables-iceberg-catalog-linked-database)

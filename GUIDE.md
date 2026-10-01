@@ -444,11 +444,12 @@ thinks of as the governance surface.
 - **Prefer mechanisms whose state is queryable** when the choice is otherwise even. A tag-
   matched policy you can enumerate beats logic embedded in a view you cannot.
 
-> **Coming from Snowflake?** The asymmetry exists there too, but it lands differently.
-> Snowflake enforces only `NOT NULL` and treats other constraints as informational, so nobody
-> expects the catalog to describe enforcement — the expectation never forms. Here, `CHECK`
-> constraints genuinely **are** enforced, which makes their absence from the catalog far more
-> surprising and far more likely to be missed.
+> **Coming from Snowflake?** The asymmetry lands differently there. Snowflake has enforced
+> `CHECK` constraints on standard tables since April 2026, and lists them in
+> `INFORMATION_SCHEMA.CHECK_CONSTRAINTS`, so the enforcing rule and its catalog entry arrive
+> together ([SNOWFLAKE.md](SNOWFLAKE.md)). Here they are enforced just the same, but the catalog
+> does not show them, which makes their absence far more surprising and far more likely to be
+> missed.
 
 ---
 

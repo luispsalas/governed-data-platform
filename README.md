@@ -60,8 +60,9 @@ sending it a row it had to refuse, and then **switched off to confirm the row go
 because a rule that fires is not yet a rule that was needed.
 
 > **Coming from Snowflake?** Databricks *enforces* `CHECK` constraints; a violated one fails
-> the transaction. Snowflake enforces only `NOT NULL` and treats the rest as informational.
-> Carrying the Snowflake habit across under-uses the strongest enforcement available here.
+> the transaction. Snowflake enforced only `NOT NULL` until April 2026 and now enforces `CHECK`
+> too ([SNOWFLAKE.md](SNOWFLAKE.md)), so a habit formed on older Snowflake designs under-uses the
+> strongest enforcement available here.
 
 > **New here?** [GUIDE.md](GUIDE.md) is the shortest path to the useful parts: the design
 > reasoning, the business decisions the platform cannot make for you, and the ten places this

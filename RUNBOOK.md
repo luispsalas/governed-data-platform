@@ -439,9 +439,10 @@ then makes it impossible to publish a row that breaks it — two independent sta
 same rule, so a mistake in one is caught by the other.
 
 > **Coming from Snowflake?** Databricks *enforces* `CHECK` constraints — *"when a constraint
-> is violated, the transaction fails with an error."* Snowflake enforces only `NOT NULL` and
-> treats the rest as informational. Primary and foreign keys are informational in **both**.
-> A habit carried across from Snowflake under-uses the strongest enforcement available here.
+> is violated, the transaction fails with an error."* Snowflake enforced only `NOT NULL` until
+> April 2026 and now enforces `CHECK` on standard tables too ([SNOWFLAKE.md](SNOWFLAKE.md)).
+> Primary and foreign keys are informational in **both**. A habit formed on older Snowflake
+> designs under-uses the strongest enforcement available here.
 
 ### Expectations — let it through, but on the record
 
