@@ -899,7 +899,7 @@ one.
 | **Operating effectiveness** | Controls are mapped to SOC 2 criteria in [section 9](#9-compliance-control-mapping-soc-2), and the assertion suite can be re-run on demand. Nobody runs it on a cadence, nobody reviews the audit log, and no change to the matrix requires approval — so there is control *design*, not evidence a control operated over a period |
 | **GDPR clause mapping** | Not started. The anonymization work in [section 7](#7-anonymization) is the raw material for one, but no article is cited and none should be inferred |
 | **Account-level setup** | Metastore creation, identity federation and workspace binding are documented in [section 10](#10-account-level-setup) and **not performed** — a single Free Edition workspace cannot demonstrate them |
-| **Cross-platform policy** | Nothing. Expressing the same rules in a second platform, and viewing both through one catalog, is not started |
+| **Cross-platform policy** | Designed, not built. [`SNOWFLAKE.md`](SNOWFLAKE.md) sets out how each control here would be expressed in Snowflake and the four ways the platforms connect, read from vendor documentation. No rule has been created or tested on a second platform, and nothing views both through one catalog |
 
 ### One thing done differently because of the environment
 

@@ -141,8 +141,9 @@ short one.
   a period. GDPR clauses are not mapped at all.
 - **Account-level setup.** Metastore creation and identity federation are documented, not
   performed; a single workspace cannot demonstrate them.
-- **Cross-platform policy.** The same rules expressed in a second platform, and the view
-  across both, are not built.
+- **Cross-platform policy, hands-on.** [`SNOWFLAKE.md`](SNOWFLAKE.md) sets out how these
+  rules would be expressed in Snowflake, read from vendor documentation. They have not been
+  built or tested on a second platform, and nothing views both through one catalog.
 
 ## What went wrong, and why that is the interesting part
 
