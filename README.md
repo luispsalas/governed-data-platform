@@ -4,6 +4,22 @@
 see what* is enforced by the platform itself rather than by convention, built on **Databricks Unity Catalog**, and tested by signing in as each kind of user to confirm they see only what
 they should.
 
+`Databricks` · `Unity Catalog` · `ABAC` · `data classification` · `column masking` · `row-level security` · `anonymization` · `data quality` · `lineage` · `SOC 2 mapping` · `synthetic data`
+
+## At a glance
+
+| | |
+|---|---|
+| **Goal** | Let analysts use real customer data from one copy, with the platform deciding who sees which rows and columns. |
+| **What was done** | A Databricks Unity Catalog build on synthetic data (5,000 customers, 20,000 orders), every column labeled, every statement kept in `sql/`. |
+| **Governance** | Rules keyed to those labels mask identifiers for all but data owners and limit an analyst to Europe's rows; a published table drops every identifier. |
+| **Measurement** | Checked by signing in as each kind of user: the owner sees 4,940 rows, the analyst 1,684, masked. Ten `CHECK` constraints each refused a bad row. |
+
+> **New here?** [GUIDE.md](GUIDE.md) is the shortest path to the useful parts: the design
+> reasoning, the business decisions the platform cannot make for you, and the ten places this
+> build's assumptions turned out to be wrong. This README describes *what* was built;
+> the guide explains *why*, and what it cost to find out.
+
 ![Architecture: data flows from a landing volume through bronze and silver to a gold aggregate. Every column carries a classification tag, and one policy reads those tags so a data owner sees full values while an analyst sees masked values and only their own region's rows.](images/architecture.svg)
 
 ## The problem this solves
@@ -22,6 +38,7 @@ This project builds the other option: **one copy of the data, where the platform
 each person sees, row by row and column by column.** An analyst querying the customer table
 gets real, useful data with the identifying values replaced. They are not looking at a
 filtered copy; they are looking at the same table an engineer sees, through different rules.
+
 
 ## How it works, in plain terms
 
@@ -46,6 +63,7 @@ The national ID becomes a consistent code, so records can still be counted and j
 not traced to a person. The birth date keeps its year, so age analysis survives. **The goal
 is not to hide the data; it is to keep it useful while it stops being identifying.**
 
+
 ## Keeping bad data out
 
 Two different jobs, deliberately kept apart, because they fail differently:
@@ -64,10 +82,6 @@ because a rule that fires is not yet a rule that was needed.
 > too ([SNOWFLAKE.md](SNOWFLAKE.md)), so a habit formed on older Snowflake designs under-uses the
 > strongest enforcement available here.
 
-> **New here?** [GUIDE.md](GUIDE.md) is the shortest path to the useful parts: the design
-> reasoning, the business decisions the platform cannot make for you, and the ten places this
-> build's assumptions turned out to be wrong. This README describes *what* was built;
-> the guide explains *why*, and what it cost to find out.
 
 ## Two ways to protect the same data
 
@@ -107,29 +121,6 @@ correct if the restriction meant "may not see their personal data", wrong if it 
 not know about them". No technical check can tell those apart; somebody has to write down
 which one was meant.
 
-## What is in here
-
-| | |
-|---|---|
-| **[GUIDE.md](GUIDE.md)** | **Start here if you are about to build one of these.** What the work involves, which decisions belong to the business, and the places where a reasonable design meets the platform and loses |
-| **[RUNBOOK.md](RUNBOOK.md)** | The full walkthrough: design, controls, and how each one was verified |
-| [`SNOWFLAKE.md`](SNOWFLAKE.md) | Snowflake ↔ Databricks: governance differences that change a design, and the four ways the platforms actually connect |
-| `sql/` | Every statement used to build it, in run order, commented for non-SQL readers, including the constraint and expectation scripts, which carry their own recorded results |
-| `images/` | Lineage captured from the platform, showing the data flow and its classification |
-| `generate_data.py` | Generates the synthetic dataset |
-
-## About the data
-
-**Every person in this dataset is invented.** 5,000 customers and 20,000 orders generated
-with [Faker](https://faker.readthedocs.io/), including deliberate defects: missing emails,
-negative amounts, orders belonging to customers who do not exist, so that the data quality
-rules have something real to catch.
-
-The CSVs are not committed. `python generate_data.py` reproduces them exactly: the seed is
-fixed, so the files are byte-identical every time.
-
-Screenshots have been cropped and checked so they carry no account, workspace, or host
-identifiers.
 
 ## What this does NOT cover yet
 
@@ -145,6 +136,7 @@ short one.
 - **Cross-platform policy, hands-on.** [`SNOWFLAKE.md`](SNOWFLAKE.md) sets out how these
   rules would be expressed in Snowflake, read from vendor documentation. They have not been
   built or tested on a second platform, and nothing views both through one catalog.
+
 
 ## What went wrong, and why that is the interesting part
 
@@ -176,3 +168,29 @@ from:
 > That is the argument for testing governance as a second identity rather than reading
 > the configuration: a control that is wrong and a control that is right look identical
 > from the seat that built it.
+
+
+## About the data
+
+**Every person in this dataset is invented.** 5,000 customers and 20,000 orders generated
+with [Faker](https://faker.readthedocs.io/), including deliberate defects: missing emails,
+negative amounts, orders belonging to customers who do not exist, so that the data quality
+rules have something real to catch.
+
+The CSVs are not committed. `python generate_data.py` reproduces them exactly: the seed is
+fixed, so the files are byte-identical every time.
+
+Screenshots have been cropped and checked so they carry no account, workspace, or host
+identifiers.
+
+
+## What is in here
+
+| | |
+|---|---|
+| **[GUIDE.md](GUIDE.md)** | **Start here if you are about to build one of these.** What the work involves, which decisions belong to the business, and the places where a reasonable design meets the platform and loses |
+| **[RUNBOOK.md](RUNBOOK.md)** | The full walkthrough: design, controls, and how each one was verified |
+| [`SNOWFLAKE.md`](SNOWFLAKE.md) | Snowflake ↔ Databricks: governance differences that change a design, and the four ways the platforms actually connect |
+| `sql/` | Every statement used to build it, in run order, commented for non-SQL readers, including the constraint and expectation scripts, which carry their own recorded results |
+| `images/` | Lineage captured from the platform, showing the data flow and its classification |
+| `generate_data.py` | Generates the synthetic dataset |
