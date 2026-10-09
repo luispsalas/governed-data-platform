@@ -40,6 +40,17 @@ gets real, useful data with the identifying values replaced. They are not lookin
 filtered copy; they are looking at the same table an engineer sees, through different rules.
 
 
+## What is in here
+
+| | |
+|---|---|
+| **[GUIDE.md](GUIDE.md)** | **Start here if you are about to build one of these.** What the work involves, which decisions belong to the business, and the places where a reasonable design meets the platform and loses |
+| **[RUNBOOK.md](RUNBOOK.md)** | The full walkthrough: design, controls, and how each one was verified |
+| [`SNOWFLAKE.md`](SNOWFLAKE.md) | Snowflake ↔ Databricks: governance differences that change a design, and the four ways the platforms actually connect |
+| `sql/` | Every statement used to build it, in run order, commented for non-SQL readers, including the constraint and expectation scripts, which carry their own recorded results |
+| `images/` | Lineage captured from the platform, showing the data flow and its classification |
+| `generate_data.py` | Generates the synthetic dataset |
+
 ## How it works, in plain terms
 
 Every column is labeled with what it is (a name, an email, a national ID, a birth date)
@@ -182,15 +193,3 @@ fixed, so the files are byte-identical every time.
 
 Screenshots have been cropped and checked so they carry no account, workspace, or host
 identifiers.
-
-
-## What is in here
-
-| | |
-|---|---|
-| **[GUIDE.md](GUIDE.md)** | **Start here if you are about to build one of these.** What the work involves, which decisions belong to the business, and the places where a reasonable design meets the platform and loses |
-| **[RUNBOOK.md](RUNBOOK.md)** | The full walkthrough: design, controls, and how each one was verified |
-| [`SNOWFLAKE.md`](SNOWFLAKE.md) | Snowflake ↔ Databricks: governance differences that change a design, and the four ways the platforms actually connect |
-| `sql/` | Every statement used to build it, in run order, commented for non-SQL readers, including the constraint and expectation scripts, which carry their own recorded results |
-| `images/` | Lineage captured from the platform, showing the data flow and its classification |
-| `generate_data.py` | Generates the synthetic dataset |
